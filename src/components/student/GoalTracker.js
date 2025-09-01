@@ -1,0 +1,481 @@
+import React, { useState, useEffect } from 'react';
+import { Target, Plus, Edit3, Trash2, Calendar, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+
+const GoalTracker = ({ 
+  user, 
+  goals = [], 
+  onCreateGoal, 
+  onUpdateGoal, 
+  onDeleteGoal,
+  onBack 
+}) => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [filter, setFilter] = useState('all'); // all, active, completed, overdue
+
+  const openForm = (goal = null) => {
+    setEditingGoal(goal);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingGoal(null);
+  };
+
+  const getGoalsByStatus = () => {
+    const now = new Date();
+    
+    return goals.map(goal => {
+      const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
+      let status = goal.status || 'active';
+      
+      // Auto-determine status based on dates and completion
+      if (goal.progress >= 100 || status === 'completed') {
+        status = 'completed';
+      } else if (targetDate && targetDate < now && status !== 'completed') {
+        status = 'overdue';
+      } else if (status !== 'paused') {
+        status = 'active';
+      }
+      
+      return { ...goal, computedStatus: status };
+    });
+  };
+
+  const getFilteredGoals = () => {
+    const goalsWithStatus = getGoalsByStatus();
+    
+    switch (filter) {
+      case 'active':
+        return goalsWithStatus.filter(g => g.computedStatus === 'active');
+      case 'completed':
+        return goalsWithStatus.filter(g => g.computedStatus === 'completed');
+      case 'overdue':
+        return goalsWithStatus.filter(g => g.computedStatus === 'overdue');
+      case 'paused':
+        return goalsWithStatus.filter(g => g.computedStatus === 'paused');
+      default:
+        return goalsWithStatus;
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'overdue':
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+      case 'paused':
+        return <Clock className="w-4 h-4 text-gray-600" />;
+      default:
+        return <Target className="w-4 h-4 text-blue-600" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'status-success';
+      case 'overdue':
+        return 'status-danger';
+      case 'paused':
+        return 'text-gray-500';
+      default:
+        return 'status-info';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No deadline';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const filteredGoals = getFilteredGoals();
+  const goalCounts = {
+    all: goals.length,
+    active: getGoalsByStatus().filter(g => g.computedStatus === 'active').length,
+    completed: getGoalsByStatus().filter(g => g.computedStatus === 'completed').length,
+    overdue: getGoalsByStatus().filter(g => g.computedStatus === 'overdue').length,
+    paused: getGoalsByStatus().filter(g => g.computedStatus === 'paused').length
+  };
+
+  if (showForm) {
+    return (
+      <GoalForm
+        goal={editingGoal}
+        onSave={async (goalData) => {
+          if (editingGoal) {
+            await onUpdateGoal(editingGoal.id, goalData);
+          } else {
+            await onCreateGoal(goalData);
+          }
+          closeForm();
+        }}
+        onCancel={closeForm}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            onClick={onBack}
+            className="text-blue-600 hover:text-blue-800 text-sm mb-2"
+          >
+            ← Back to Dashboard
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
+          <p className="text-gray-600">Manage your learning objectives and track progress</p>
+        </div>
+        <button
+          onClick={() => openForm()}
+          className="btn btn-primary"
+        >
+          <Plus className="w-4 h-4" />
+          New Goal
+        </button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          {[
+            { key: 'all', label: 'All Goals', count: goalCounts.all },
+            { key: 'active', label: 'Active', count: goalCounts.active },
+            { key: 'completed', label: 'Completed', count: goalCounts.completed },
+            { key: 'overdue', label: 'Overdue', count: goalCounts.overdue },
+            { key: 'paused', label: 'Paused', count: goalCounts.paused }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                filter === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label} {tab.count > 0 && `(${tab.count})`}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Goals List */}
+      <div className="space-y-4">
+        {filteredGoals.length === 0 ? (
+          <div className="card text-center py-12">
+            <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {filter === 'all' ? 'No goals yet' : `No ${filter} goals`}
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {filter === 'all' 
+                ? 'Create your first goal to start tracking your learning progress'
+                : `You don't have any ${filter} goals at the moment`
+              }
+            </p>
+            {filter === 'all' && (
+              <button
+                onClick={() => openForm()}
+                className="btn btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                Create Your First Goal
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredGoals.map((goal) => (
+            <div key={goal.id} className="card">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    {getStatusIcon(goal.computedStatus)}
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {goal.title}
+                    </h3>
+                    <span className={`status ${getStatusColor(goal.computedStatus)} text-xs`}>
+                      {goal.computedStatus}
+                    </span>
+                  </div>
+                  
+                  {goal.description && (
+                    <p className="text-gray-600 mb-3">{goal.description}</p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(goal.targetDate)}
+                    </div>
+                    {goal.category && (
+                      <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        {goal.category}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-700">Progress</span>
+                      <span className="text-sm text-gray-600">{goal.progress || 0}%</span>
+                    </div>
+                    <div className="progress">
+                      <div 
+                        className="progress-bar"
+                        style={{ width: `${goal.progress || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {goal.successMetrics && (
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">Success metrics: </span>
+                      <span className="text-gray-600">{goal.successMetrics}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openForm(goal)}
+                    className="text-gray-500 hover:text-gray-700 p-1"
+                    title="Edit goal"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteGoal(goal.id)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                    title="Delete goal"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+const GoalForm = ({ goal, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    targetDate: '',
+    successMetrics: '',
+    progress: 0,
+    status: 'active'
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (goal) {
+      setFormData({
+        title: goal.title || '',
+        description: goal.description || '',
+        category: goal.category || '',
+        targetDate: goal.targetDate ? goal.targetDate.split('T')[0] : '',
+        successMetrics: goal.successMetrics || '',
+        progress: goal.progress || 0,
+        status: goal.status || 'active'
+      });
+    }
+  }, [goal]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Goal title is required';
+    }
+    
+    if (formData.targetDate && new Date(formData.targetDate) < new Date()) {
+      newErrors.targetDate = 'Target date cannot be in the past';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSave({
+        ...formData,
+        targetDate: formData.targetDate ? new Date(formData.targetDate).toISOString() : null,
+        progress: parseInt(formData.progress) || 0
+      });
+    } catch (error) {
+      console.error('Error saving goal:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: null });
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">
+            {goal ? 'Edit Goal' : 'Create New Goal'}
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Set a specific, measurable learning objective
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="form-group">
+            <label className="form-label required">Goal Title</label>
+            <input
+              type="text"
+              className={`form-input ${errors.title ? 'border-red-300' : ''}`}
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              placeholder="e.g., Complete React tutorial series"
+            />
+            {errors.title && <p className="form-error">{errors.title}</p>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea
+              className="form-textarea"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              placeholder="Provide more details about this goal..."
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-2">
+            <div className="form-group">
+              <label className="form-label">Category</label>
+              <select
+                className="form-select"
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+              >
+                <option value="">Select category</option>
+                <option value="technical">Technical Skills</option>
+                <option value="research">Research</option>
+                <option value="project">Project Work</option>
+                <option value="presentation">Presentation</option>
+                <option value="writing">Writing</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Target Date</label>
+              <input
+                type="date"
+                className={`form-input ${errors.targetDate ? 'border-red-300' : ''}`}
+                value={formData.targetDate}
+                onChange={(e) => handleInputChange('targetDate', e.target.value)}
+              />
+              {errors.targetDate && <p className="form-error">{errors.targetDate}</p>}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Success Metrics</label>
+            <textarea
+              className="form-textarea"
+              value={formData.successMetrics}
+              onChange={(e) => handleInputChange('successMetrics', e.target.value)}
+              placeholder="How will you know you've achieved this goal? What does success look like?"
+              rows={2}
+            />
+          </div>
+
+          <div className="grid grid-2">
+            <div className="form-group">
+              <label className="form-label">Current Progress (%)</label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={formData.progress}
+                  onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-lg font-semibold text-blue-600 w-12">
+                  {formData.progress}%
+                </span>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-select"
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
+              >
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? (
+                <div className="loading-spinner"></div>
+              ) : (
+                <>
+                  <Target className="w-4 h-4" />
+                  {goal ? 'Update Goal' : 'Create Goal'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default GoalTracker;
