@@ -26,7 +26,7 @@ A React-based web application for managing independent study programs, built for
 - **Backend**: Firebase (Authentication, Firestore, Hosting)
 - **APIs**: Google Calendar API for meeting management
 - **Styling**: Custom CSS with utility classes
-- **Deployment**: GitHub Pages / Firebase Hosting
+- **Deployment**: Vercel / Firebase Hosting
 
 ## Getting Started
 
@@ -59,7 +59,7 @@ A React-based web application for managing independent study programs, built for
 
 4. **Configure environment variables**
 
-   - Update `.env.local` with your Firebase and Google API credentials
+Create a `.env.local` file with:
    - Set the admin email address
 
 5. **Run the development server**
@@ -78,21 +78,27 @@ REACT_APP_FIREBASE_PROJECT_ID=your_project_id
 REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 REACT_APP_FIREBASE_APP_ID=your_app_id
-
-REACT_APP_GOOGLE_CALENDAR_API_KEY=your_calendar_api_key
-REACT_APP_GOOGLE_CALENDAR_ID=your_calendar_id
-
-REACT_APP_ADMIN_EMAIL=zchien@bwscampus.com
+REACT_APP_ADMIN_EMAIL=admin@example.com
 ```
+
+**Environment Variables:**
+- `REACT_APP_FIREBASE_*`: Firebase project configuration (client-side config, safe to expose)
+- `REACT_APP_ADMIN_EMAIL`: Email address of the application administrator
+
+**Note:** All environment variables must start with `REACT_APP_` to be accessible in the React application.
 
 ## Deployment
 
-### GitHub Pages
+### Vercel (Recommended)
 
-```bash
-npm run build
-npm run deploy
-```
+This application is configured for deployment on Vercel:
+
+1. **Connect your repository** to Vercel
+2. **Build settings:**
+   - Build Command: `npm run build`
+   - Output Directory: `build`
+3. **Environment Variables:** Add all required variables from `.env.example`
+4. **Deploy:** Vercel will automatically deploy on push to main branch
 
 ### Firebase Hosting
 
