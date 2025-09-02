@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Target, Calendar, Clock, Plus, Edit3 } from 'lucide-react';
 import ReflectionForm from './ReflectionForm';
 import GoalTracker from './GoalTracker';
@@ -11,25 +11,26 @@ import {
   updateGoal,
   deleteGoal,
   getUserMeetings,
-  getAllImportantDates 
+  getAllImportantDates,
+  getAdvisorByName
 } from '../../services/firebase';
 
-const StudentDashboard = ({ user }) => {
+const StudentDashboard = ({ user, userProfile }) => {
   const [reflections, setReflections] = useState([]);
   const [goals, setGoals] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [importantDates, setImportantDates] = useState([]);
+  const [advisorInfo, setAdvisorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showReflectionForm, setShowReflectionForm] = useState(false);
   const [showGoalTracker, setShowGoalTracker] = useState(false);
   const [reflectionType, setReflectionType] = useState('pre-meeting');
   const [editingReflection, setEditingReflection] = useState(null);
 
-  useEffect(() => {
-    fetchUserData();
-  }, [user]);
-
-  const fetchUserData = async () => {
+  // Wrap fetchUserData in useCallback to fix dependency warning
+  const fetchUserData = useCallback(async () => {
+    if (!user?.uid) return;
+    
     try {
       setLoading(true);
       const [userReflections, userGoals, userMeetings, dates] = await Promise.all([
@@ -48,7 +49,27 @@ const StudentDashboard = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  // Fetch advisor info when user profile is available
+  useEffect(() => {
+    const fetchAdvisorInfo = async () => {
+      if (userProfile?.advisor) {
+        try {
+          const advisor = await getAdvisorByName(userProfile.advisor);
+          setAdvisorInfo(advisor);
+        } catch (error) {
+          console.error('Error fetching advisor info:', error);
+        }
+      }
+    };
+
+    fetchAdvisorInfo();
+  }, [userProfile?.advisor]);
 
   const handleSaveReflection = async (reflectionData) => {
     try {
@@ -101,6 +122,16 @@ const StudentDashboard = ({ user }) => {
     setReflectionType(type);
     setEditingReflection(reflection);
     setShowReflectionForm(true);
+  };
+
+  // Get the appropriate Calendly link
+  const getSchedulingLink = () => {
+    // Use advisor's Calendly link if available
+    if (advisorInfo?.schedulingTool) {
+      return advisorInfo.schedulingTool;
+    }
+    // Fallback to admin Calendly for unassigned students
+    return 'https://calendly.com/zacharychien';
   };
 
   const formatDate = (dateString) => {
@@ -211,7 +242,10 @@ const StudentDashboard = ({ user }) => {
             <Target className="w-4 h-4" />
             Manage Goals
           </button>
-          <button className="btn btn-secondary">
+          <button 
+            onClick={() => window.open(getSchedulingLink(), '_blank')}
+            className="btn btn-secondary"
+          >
             <Calendar className="w-4 h-4" />
             Schedule Meeting
           </button>
@@ -288,7 +322,10 @@ const StudentDashboard = ({ user }) => {
               <Calendar className="w-5 h-5 text-green-600" />
               <h2 className="card-title">Upcoming Meetings</h2>
             </div>
-            <button className="btn btn-sm btn-secondary">
+            <button 
+              onClick={() => window.open(getSchedulingLink(), '_blank')}
+              className="btn btn-sm btn-secondary"
+            >
               <Plus className="w-4 h-4" />
               Book Meeting
             </button>
@@ -318,7 +355,10 @@ const StudentDashboard = ({ user }) => {
             ) : (
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <p className="text-sm text-gray-600">No meetings scheduled</p>
-                <button className="btn btn-primary btn-sm mt-2">
+                <button 
+                  onClick={() => window.open(getSchedulingLink(), '_blank')}
+                  className="btn btn-primary btn-sm mt-2"
+                >
                   Book a Meeting
                 </button>
               </div>

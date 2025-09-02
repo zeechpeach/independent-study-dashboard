@@ -24,15 +24,32 @@ export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     
-    // Create or update user document
-    await setDoc(doc(db, 'users', user.uid), {
-      email: user.email,
-      name: user.displayName,
-      photoURL: user.photoURL,
-      isAdmin: user.email === process.env.REACT_APP_ADMIN_EMAIL,
-      createdAt: serverTimestamp(),
-      lastLoginAt: serverTimestamp()
-    }, { merge: true });
+    // Check if email domain is allowed
+    if (!user.email.endsWith('@bwscampus.com')) {
+      await signOut(auth);
+      throw new Error('Access denied. Please use your @bwscampus.com email address.');
+    }
+    
+    // Check if user already exists (prevent duplicates)
+    const existingUser = await getUserProfile(user.uid);
+    
+    if (existingUser) {
+      // User exists, just update login time
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastLoginAt: serverTimestamp()
+      });
+    } else {
+      // New user, create basic profile (onboarding will complete it)
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        name: user.displayName,
+        photoURL: user.photoURL,
+        isAdmin: user.email === process.env.REACT_APP_ADMIN_EMAIL,
+        onboardingComplete: false, // Explicitly set to false for new users
+        createdAt: serverTimestamp(),
+        lastLoginAt: serverTimestamp()
+      });
+    }
     
     return user;
   } catch (error) {
@@ -71,6 +88,64 @@ export const updateUserProfile = async (uid, data) => {
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;
+  }
+};
+
+// Onboarding functions
+export const saveUserOnboarding = async (userId, onboardingData) => {
+  try {
+    await updateDoc(doc(db, 'users', userId), {
+      ...onboardingData,
+      onboardingComplete: true,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error saving onboarding:', error);
+    throw error;
+  }
+};
+
+export const getAdvisorsByPathway = async (pathway) => {
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('userType', '==', 'advisor'),
+      where('pathway', '==', pathway),
+      where('isAdmin', '==', true) // Only approved advisors
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name,
+      email: doc.data().email,
+      schedulingTool: doc.data().schedulingTool,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisors by pathway:', error);
+    throw error;
+  }
+};
+
+export const getAdvisorByName = async (advisorName) => {
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('name', '==', advisorName),
+      where('userType', '==', 'advisor')
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const advisorDoc = querySnapshot.docs[0];
+      return {
+        id: advisorDoc.id,
+        ...advisorDoc.data()
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting advisor by name:', error);
+    return null;
   }
 };
 

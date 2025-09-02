@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Save, Clock, CheckCircle } from 'lucide-react';
 
 const ReflectionForm = ({ 
   type = 'pre-meeting', // 'pre-meeting' or 'post-meeting'
@@ -30,11 +30,16 @@ const ReflectionForm = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
+  // Use useCallback to fix the dependency warning
+  const initializeFormData = useCallback(() => {
     if (existingReflection) {
-      setFormData({ ...formData, ...existingReflection });
+      setFormData(prevData => ({ ...prevData, ...existingReflection }));
     }
   }, [existingReflection]);
+
+  useEffect(() => {
+    initializeFormData();
+  }, [initializeFormData]);
 
   const addActionItem = () => {
     if (actionItem.trim()) {

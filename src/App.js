@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
-import { signInWithGoogle, logOut, auth } from './services/firebase';
+import { signInWithGoogle, logOut, auth, getUserProfile } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { BookOpen, Target, Calendar, Users } from 'lucide-react';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
+import OnboardingForm from './components/shared/OnboardingForm';
 import './styles/globals.css';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
-  // Simple auth state listener
+  // Auth state listener with onboarding check
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthLoading(true);
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          // Get user profile to check onboarding status
+          const profile = await getUserProfile(firebaseUser.uid);
+          setUserProfile(profile);
+        } else {
+          setUser(null);
+          setUserProfile(null);
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+        setUserProfile(null);
+      } finally {
+        setAuthLoading(false);
+      }
     });
     return unsubscribe;
   }, []);
@@ -36,16 +54,46 @@ function App() {
   const handleLogout = async () => {
     try {
       await logOut();
-      setShowAdminDashboard(false); // Reset admin view on logout
+      setShowAdminDashboard(false);
+      setUserProfile(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  const isAdmin = user?.email === process.env.REACT_APP_ADMIN_EMAIL;
+  const handleOnboardingComplete = async () => {
+    // Refresh user profile after onboarding
+    if (user) {
+      try {
+        const updatedProfile = await getUserProfile(user.uid);
+        setUserProfile(updatedProfile);
+      } catch (error) {
+        console.error('Error refreshing user profile:', error);
+      }
+    }
+  };
 
-  // If user is logged in, show dashboard
-  if (user) {
+  const isAdmin = user?.email === process.env.REACT_APP_ADMIN_EMAIL || userProfile?.isAdmin;
+
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="loading-spinner" />
+          <span className="text-gray-600">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding for users who haven't completed it
+  if (user && (!userProfile || !userProfile.onboardingComplete)) {
+    return <OnboardingForm user={user} onComplete={handleOnboardingComplete} />;
+  }
+
+  // If user is logged in and onboarded, show dashboard
+  if (user && userProfile?.onboardingComplete) {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="header">
@@ -67,6 +115,11 @@ function App() {
                   </span>
                   {isAdmin && (
                     <span className="status status-info text-xs">Admin</span>
+                  )}
+                  {userProfile?.userType && (
+                    <span className="status status-success text-xs">
+                      {userProfile.userType}
+                    </span>
                   )}
                 </div>
                 
@@ -95,10 +148,14 @@ function App() {
             {showAdminDashboard ? (
               <AdminDashboard 
                 user={user} 
+                userProfile={userProfile}
                 onBack={() => setShowAdminDashboard(false)} 
               />
             ) : (
-              <StudentDashboard user={user} />
+              <StudentDashboard 
+                user={user}
+                userProfile={userProfile}
+              />
             )}
           </div>
         </main>
@@ -106,75 +163,35 @@ function App() {
     );
   }
 
-  // Login page
+  // Ultra-simple login page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        {/* Logo and Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl mb-6 shadow-lg">
-            <BookOpen className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="w-full max-w-sm text-center">
+
+        {/* Title */}
+        <h1 className="text-3xl font-semibold text-gray-900 mb-12">
+          Independent Study Dashboard
+        </h1>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 text-sm">{error}</p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-            Independent Study Dashboard
-          </h1>
-          <p className="text-gray-600 leading-relaxed">
-            Transform your learning journey with intelligent progress tracking and reflection tools
-          </p>
-        </div>
+        )}
 
-        {/* Main Card */}
-        <div className="card p-8 shadow-xl border-0 bg-white/70 backdrop-blur-sm">
-          {/* Features Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Target className="w-4 h-4 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-blue-900">Goal Tracking</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-green-600" />
-              </div>
-              <span className="text-sm font-medium text-green-900">Smart Scheduling</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 border border-purple-100">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-purple-600" />
-              </div>
-              <span className="text-sm font-medium text-purple-900">Rich Reflections</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 border border-orange-100">
-              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Users className="w-4 h-4 text-orange-600" />
-              </div>
-              <span className="text-sm font-medium text-orange-900">Mentorship Hub</span>
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-              <div className="flex items-center">
-                <div className="w-5 h-5 text-red-400 mr-2">⚠</div>
-                <p className="text-red-800 text-sm font-medium">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Sign In Button */}
+        {/* Single Sign In Button */}
+        <div className="flex justify-center mb-12">
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full btn btn-primary btn-lg mb-4 relative overflow-hidden group"
-            style={{ minHeight: '48px' }}
+            className="btn btn-primary btn-lg px-8 py-4"
           >
             {loading ? (
               <div className="loading-spinner" />
             ) : (
               <>
-                <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -192,24 +209,22 @@ function App() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                <span className="font-semibold">Continue with Google</span>
+                Continue with Google
               </>
             )}
           </button>
-          
-          {/* Privacy Notice */}
-          <p className="text-xs text-gray-500 text-center leading-relaxed">
-            Secure authentication through your school Google account. 
-            <br />Your privacy and data security are our top priorities.
-          </p>
         </div>
 
-        {/* Help Section */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-gray-500">
-            Need assistance? Contact your independent study coordinator
-          </p>
-        </div>
+        {/* Help */}
+        <p className="text-sm text-gray-500">
+          Need help? Contact{' '}
+          <a 
+            href="mailto:zchien@bwscampus.com" 
+            className="text-blue-600 hover:text-blue-700"
+          >
+            zchien@bwscampus.com
+          </a>
+        </p>
       </div>
     </div>
   );
