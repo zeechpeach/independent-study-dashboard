@@ -1,37 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, Users } from 'lucide-react';
+import { getStudentsNeedingAttention } from '../../services/firebase';
 
 /**
  * NeedsAttentionPanel - Displays students requiring advisor attention
  * 
- * Static placeholder content for Phase 3A structural migration.
- * Future phases will implement actual data integration.
+ * Phase 3B: Now uses dynamic data from Firebase to show real students
+ * who need attention based on missing reflections, overdue goals, etc.
  */
-const NeedsAttentionPanel = ({ className = '' }) => {
-  // Static placeholder data
-  const studentsNeedingAttention = [
-    {
-      id: '1',
-      name: 'Alex Johnson',
-      issue: 'No reflection submitted this week',
-      priority: 'high',
-      daysOverdue: 3
-    },
-    {
-      id: '2', 
-      name: 'Morgan Chen',
-      issue: 'Missing goal progress updates',
-      priority: 'medium',
-      daysOverdue: 1
-    },
-    {
-      id: '3',
-      name: 'Jordan Smith',
-      issue: 'Missed scheduled meeting',
-      priority: 'high',
-      daysOverdue: 2
+const NeedsAttentionPanel = ({ className = '', advisorName, userProfile }) => {
+  const [studentsNeedingAttention, setStudentsNeedingAttention] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get advisor name from userProfile if not provided directly
+  const actualAdvisorName = advisorName || userProfile?.name;
+
+  useEffect(() => {
+    const fetchStudentsNeedingAttention = async () => {
+      if (!actualAdvisorName) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const students = await getStudentsNeedingAttention(actualAdvisorName);
+        
+        // Transform the data to match the expected format
+        const transformedStudents = students.map(student => ({
+          id: student.id,
+          name: student.name,
+          issue: student.attentionReasons.join(', '),
+          priority: determinePriority(student),
+          daysOverdue: student.daysSinceLastReflection || 0,
+          rawReasons: student.attentionReasons,
+          overdueGoals: student.overdueGoals
+        }));
+        
+        setStudentsNeedingAttention(transformedStudents);
+      } catch (err) {
+        console.error('Error fetching students needing attention:', err);
+        setError('Failed to load student data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentsNeedingAttention();
+  }, [actualAdvisorName]);
+
+  const determinePriority = (student) => {
+    // High priority: multiple issues or >7 days since reflection
+    if (student.attentionReasons.length > 1 || student.daysSinceLastReflection > 7) {
+      return 'high';
     }
-  ];
+    // Medium priority: overdue goals or 3-7 days since reflection
+    if (student.overdueGoals > 0 || student.daysSinceLastReflection > 3) {
+      return 'medium';
+    }
+    // Low priority: other issues
+    return 'low';
+  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -46,15 +77,51 @@ const NeedsAttentionPanel = ({ className = '' }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={`card ${className}`}>
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <h2 className="card-title">Students Needing Attention</h2>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="loading-spinner w-6 h-6" />
+          <span className="ml-2 text-gray-600">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`card ${className}`}>
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <h2 className="card-title">Students Needing Attention</h2>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-400" />
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`card ${className}`}>
       <div className="card-header">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-red-600" />
           <h2 className="card-title">Students Needing Attention</h2>
-          <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
-            {studentsNeedingAttention.length}
-          </span>
+          {studentsNeedingAttention.length > 0 && (
+            <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+              {studentsNeedingAttention.length}
+            </span>
+          )}
         </div>
       </div>
       
@@ -73,10 +140,12 @@ const NeedsAttentionPanel = ({ className = '' }) => {
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">{student.issue}</p>
-                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                  <Clock className="w-3 h-3" />
-                  <span>{student.daysOverdue} day(s) overdue</span>
-                </div>
+                {student.daysOverdue > 0 && (
+                  <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                    <Clock className="w-3 h-3" />
+                    <span>{student.daysOverdue} day(s) since last reflection</span>
+                  </div>
+                )}
               </div>
               <button className="text-xs bg-white text-gray-700 border border-gray-300 px-2 py-1 rounded hover:bg-gray-50">
                 View

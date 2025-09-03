@@ -1,52 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Clock, User, ChevronRight } from 'lucide-react';
+import { getRecentReflectionsByAdvisor } from '../../services/firebase';
 
 /**
  * RecentReflectionsPanel - Displays recent student reflections for advisor review
  * 
- * Static placeholder content for Phase 3A structural migration.
- * Future phases will implement actual data integration.
+ * Phase 3B: Now uses dynamic data from Firebase to show real student reflections
+ * submitted by students assigned to this advisor.
  */
-const RecentReflectionsPanel = ({ className = '' }) => {
-  // Static placeholder data
-  const recentReflections = [
-    {
-      id: '1',
-      studentName: 'Alex Johnson',
-      type: 'pre-meeting',
-      title: 'Weekly Progress Check',
-      excerpt: 'Made significant progress on the data visualization component. Ready to discuss next steps...',
-      submittedAt: '2024-01-15T10:30:00Z',
-      status: 'unread'
-    },
-    {
-      id: '2',
-      studentName: 'Morgan Chen', 
-      type: 'post-meeting',
-      title: 'Meeting Follow-up',
-      excerpt: 'Action items from our discussion: 1) Research React performance optimization, 2) Update project timeline...',
-      submittedAt: '2024-01-14T16:45:00Z',
-      status: 'read'
-    },
-    {
-      id: '3',
-      studentName: 'Jordan Smith',
-      type: 'weekly',
-      title: 'Week 3 Reflection',
-      excerpt: 'This week I focused on learning TypeScript fundamentals. Challenges included understanding interface definitions...',
-      submittedAt: '2024-01-14T09:15:00Z',
-      status: 'read'
-    },
-    {
-      id: '4',
-      studentName: 'Casey Wilson',
-      type: 'milestone',
-      title: 'MVP Completion Reflection',
-      excerpt: 'Successfully completed the MVP! Key learnings include project architecture decisions and user feedback integration...',
-      submittedAt: '2024-01-13T14:20:00Z',
-      status: 'read'
-    }
-  ];
+const RecentReflectionsPanel = ({ className = '', advisorName, userProfile }) => {
+  const [recentReflections, setRecentReflections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get advisor name from userProfile if not provided directly
+  const actualAdvisorName = advisorName || userProfile?.name;
+
+  useEffect(() => {
+    const fetchRecentReflections = async () => {
+      if (!actualAdvisorName) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const reflections = await getRecentReflectionsByAdvisor(actualAdvisorName, 10);
+        
+        // Transform the data to match the expected format
+        const transformedReflections = reflections.map(reflection => ({
+          id: reflection.id,
+          studentName: reflection.studentName,
+          type: reflection.type || 'weekly',
+          title: reflection.title || 'Reflection',
+          excerpt: reflection.content ? reflection.content.substring(0, 100) + '...' : 'No content preview available',
+          submittedAt: reflection.createdAt?.toDate?.() || new Date(reflection.createdAt),
+          status: 'unread', // We could track read status in future
+          pathway: reflection.pathway,
+          studentEmail: reflection.studentEmail
+        }));
+        
+        setRecentReflections(transformedReflections);
+      } catch (err) {
+        console.error('Error fetching recent reflections:', err);
+        setError('Failed to load reflections');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentReflections();
+  }, [actualAdvisorName]);
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -63,16 +68,56 @@ const RecentReflectionsPanel = ({ className = '' }) => {
     }
   };
 
-  const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
+  const formatTimeAgo = (date) => {
     const now = new Date();
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    const reflectionDate = date instanceof Date ? date : new Date(date);
+    const diffInHours = Math.floor((now - reflectionDate) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks === 1) return '1 week ago';
+    return `${diffInWeeks} weeks ago`;
   };
+
+  if (loading) {
+    return (
+      <div className={`card ${className}`}>
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <h2 className="card-title">Recent Reflections</h2>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="loading-spinner w-6 h-6" />
+          <span className="ml-2 text-gray-600">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`card ${className}`}>
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <h2 className="card-title">Recent Reflections</h2>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <MessageSquare className="w-8 h-8 mx-auto mb-2 text-red-400" />
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const unreadCount = recentReflections.filter(r => r.status === 'unread').length;
 
   return (
     <div className={`card ${className}`}>
@@ -80,9 +125,11 @@ const RecentReflectionsPanel = ({ className = '' }) => {
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-blue-600" />
           <h2 className="card-title">Recent Reflections</h2>
-          <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-            {recentReflections.filter(r => r.status === 'unread').length} new
-          </span>
+          {unreadCount > 0 && (
+            <span className="ml-auto bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+              {unreadCount} new
+            </span>
+          )}
         </div>
       </div>
       
@@ -121,9 +168,14 @@ const RecentReflectionsPanel = ({ className = '' }) => {
                   {reflection.excerpt}
                 </p>
                 
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Clock className="w-3 h-3" />
-                  <span>{formatTimeAgo(reflection.submittedAt)}</span>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatTimeAgo(reflection.submittedAt)}</span>
+                  </div>
+                  {reflection.pathway && (
+                    <span className="text-gray-400">• {reflection.pathway}</span>
+                  )}
                 </div>
               </div>
               
@@ -136,6 +188,7 @@ const RecentReflectionsPanel = ({ className = '' }) => {
           <div className="text-center py-8 text-gray-500">
             <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
             <p className="text-sm">No recent reflections</p>
+            <p className="text-xs mt-1">Students will appear here when they submit reflections</p>
           </div>
         )}
       </div>

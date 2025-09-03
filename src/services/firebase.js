@@ -412,3 +412,224 @@ export const getAllGoals = async () => {
     throw error;
   }
 };
+
+// Advisor-specific functions for Phase 3B
+/**
+ * Get students assigned to a specific advisor
+ * @param {string} advisorName - Name of the advisor
+ * @returns {Promise<Array>} Array of student profiles assigned to the advisor
+ */
+export const getStudentsByAdvisor = async (advisorName) => {
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('advisor', '==', advisorName),
+      where('userType', '==', 'student'),
+      where('onboardingComplete', '==', true)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting students by advisor:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get aggregated dashboard data for an advisor
+ * @param {string} advisorName - Name of the advisor
+ * @returns {Promise<Object>} Aggregated statistics for advisor dashboard
+ */
+export const getAdvisorDashboardData = async (advisorName) => {
+  try {
+    // Get all students assigned to this advisor
+    const students = await getStudentsByAdvisor(advisorName);
+    const studentIds = students.map(student => student.id);
+    
+    if (studentIds.length === 0) {
+      return {
+        totalStudents: 0,
+        activeStudents: 0,
+        pendingReflections: 0,
+        activeGoals: 0,
+        overdueItems: 0,
+        weeklyMeetings: 0
+      };
+    }
+
+    // Get goals for all students
+    const goalsPromises = studentIds.map(studentId => getUserGoals(studentId));
+    const allGoalsArrays = await Promise.all(goalsPromises);
+    const allGoals = allGoalsArrays.flat();
+
+    // Get reflections for all students (recent ones)
+    const reflectionsPromises = studentIds.map(studentId => getUserReflections(studentId));
+    const allReflectionsArrays = await Promise.all(reflectionsPromises);
+    const allReflections = allReflectionsArrays.flat();
+
+    // Get meetings for all students
+    const meetingsPromises = studentIds.map(studentId => getUserMeetings(studentId));
+    const allMeetingsArrays = await Promise.all(meetingsPromises);
+    const allMeetings = allMeetingsArrays.flat();
+
+    // Calculate statistics
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const activeGoals = allGoals.filter(goal => goal.status !== 'completed').length;
+    const overdueGoals = allGoals.filter(goal => {
+      if (goal.status === 'completed') return false;
+      const targetDate = goal.targetDate?.toDate?.() || new Date(goal.targetDate);
+      return targetDate < now;
+    }).length;
+
+    const weeklyMeetings = allMeetings.filter(meeting => {
+      const meetingDate = meeting.scheduledDate?.toDate?.() || new Date(meeting.scheduledDate);
+      return meetingDate >= weekAgo && meetingDate <= now;
+    }).length;
+
+    const recentReflections = allReflections.filter(reflection => {
+      const reflectionDate = reflection.createdAt?.toDate?.() || new Date(reflection.createdAt);
+      return reflectionDate >= weekAgo;
+    });
+
+    // Students who have been active in the last week (goals, reflections, or meetings)
+    const activeStudentIds = new Set();
+    recentReflections.forEach(r => activeStudentIds.add(r.userId));
+    allMeetings.filter(m => {
+      const meetingDate = m.scheduledDate?.toDate?.() || new Date(m.scheduledDate);
+      return meetingDate >= weekAgo;
+    }).forEach(m => activeStudentIds.add(m.studentId));
+
+    return {
+      totalStudents: students.length,
+      activeStudents: activeStudentIds.size,
+      pendingReflections: students.length - recentReflections.length, // Students without recent reflections
+      activeGoals,
+      overdueItems: overdueGoals,
+      weeklyMeetings
+    };
+  } catch (error) {
+    console.error('Error getting advisor dashboard data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get recent reflections from all students assigned to an advisor
+ * @param {string} advisorName - Name of the advisor
+ * @param {number} limit - Maximum number of reflections to return (default: 10)
+ * @returns {Promise<Array>} Array of recent reflections with student info
+ */
+export const getRecentReflectionsByAdvisor = async (advisorName, limit = 10) => {
+  try {
+    // Get all students assigned to this advisor
+    const students = await getStudentsByAdvisor(advisorName);
+    const studentIds = students.map(student => student.id);
+    
+    if (studentIds.length === 0) {
+      return [];
+    }
+
+    // Get reflections for all students
+    const reflectionsPromises = studentIds.map(studentId => getUserReflections(studentId));
+    const allReflectionsArrays = await Promise.all(reflectionsPromises);
+    const allReflections = allReflectionsArrays.flat();
+
+    // Add student info to reflections and sort by date
+    const reflectionsWithStudentInfo = allReflections.map(reflection => {
+      const student = students.find(s => s.id === reflection.userId);
+      return {
+        ...reflection,
+        studentName: student?.name || 'Unknown Student',
+        studentEmail: student?.email || '',
+        pathway: student?.pathway || ''
+      };
+    });
+
+    // Sort by creation date (most recent first) and limit results
+    reflectionsWithStudentInfo.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return dateB - dateA;
+    });
+
+    return reflectionsWithStudentInfo.slice(0, limit);
+  } catch (error) {
+    console.error('Error getting recent reflections by advisor:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get students who need attention (haven't submitted reflections recently, overdue goals, etc.)
+ * @param {string} advisorName - Name of the advisor
+ * @returns {Promise<Array>} Array of students who need attention with reasons
+ */
+export const getStudentsNeedingAttention = async (advisorName) => {
+  try {
+    // Get all students assigned to this advisor
+    const students = await getStudentsByAdvisor(advisorName);
+    const studentsNeedingAttention = [];
+    
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    for (const student of students) {
+      const reasons = [];
+      
+      // Check for recent reflections
+      const reflections = await getUserReflections(student.id);
+      const recentReflections = reflections.filter(reflection => {
+        const reflectionDate = reflection.createdAt?.toDate?.() || new Date(reflection.createdAt);
+        return reflectionDate >= weekAgo;
+      });
+
+      if (recentReflections.length === 0) {
+        reasons.push('No recent reflections (7+ days)');
+      }
+
+      // Check for overdue goals
+      const goals = await getUserGoals(student.id);
+      const overdueGoals = goals.filter(goal => {
+        if (goal.status === 'completed') return false;
+        const targetDate = goal.targetDate?.toDate?.() || new Date(goal.targetDate);
+        return targetDate < now;
+      });
+
+      if (overdueGoals.length > 0) {
+        reasons.push(`${overdueGoals.length} overdue goal${overdueGoals.length > 1 ? 's' : ''}`);
+      }
+
+      // Check for missed meetings
+      const meetings = await getUserMeetings(student.id);
+      const missedMeetings = meetings.filter(meeting => {
+        if (meeting.status === 'completed') return false;
+        const meetingDate = meeting.scheduledDate?.toDate?.() || new Date(meeting.scheduledDate);
+        return meetingDate < now && meeting.status !== 'cancelled';
+      });
+
+      if (missedMeetings.length > 0) {
+        reasons.push(`${missedMeetings.length} missed meeting${missedMeetings.length > 1 ? 's' : ''}`);
+      }
+
+      if (reasons.length > 0) {
+        studentsNeedingAttention.push({
+          ...student,
+          attentionReasons: reasons,
+          overdueGoals: overdueGoals.length,
+          daysSinceLastReflection: recentReflections.length === 0 ? 
+            Math.floor((now - (reflections[0]?.createdAt?.toDate?.() || now)) / (1000 * 60 * 60 * 24)) : 0
+        });
+      }
+    }
+
+    return studentsNeedingAttention;
+  } catch (error) {
+    console.error('Error getting students needing attention:', error);
+    throw error;
+  }
+};
