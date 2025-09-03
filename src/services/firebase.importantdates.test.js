@@ -10,16 +10,17 @@ describe('Important Dates Functions', () => {
   test('Important dates functions should be properly exported', () => {
     const firebase = require('./firebase');
     
-    expect(typeof firebase.createAdvisorImportantDate).toBe('function');
-    expect(typeof firebase.updateAdvisorImportantDate).toBe('function');
-    expect(typeof firebase.deleteAdvisorImportantDate).toBe('function');
+    expect(typeof firebase.createImportantDate).toBe('function');
+    expect(typeof firebase.updateImportantDate).toBe('function');
+    expect(typeof firebase.deleteImportantDate).toBe('function');
     expect(typeof firebase.getAdvisorImportantDates).toBe('function');
-    expect(typeof firebase.getUpcomingImportantDatesForAdvisors).toBe('function');
+    expect(typeof firebase.getImportantDatesForAdvisors).toBe('function');
+    expect(typeof firebase.getAllImportantDates).toBe('function');
   });
 
   // Test basic parameter validation (shortened timeout)
-  test('createAdvisorImportantDate should handle parameters correctly', async () => {
-    const { createAdvisorImportantDate } = require('./firebase');
+  test('createImportantDate should handle parameters correctly', async () => {
+    const { createImportantDate } = require('./firebase');
     
     const testDate = {
       title: 'Test Event',
@@ -34,7 +35,7 @@ describe('Important Dates Functions', () => {
       );
       
       await Promise.race([
-        createAdvisorImportantDate('test-advisor-id', testDate),
+        createImportantDate(testDate, 'test-advisor-id'),
         timeoutPromise
       ]);
     } catch (error) {
@@ -43,11 +44,11 @@ describe('Important Dates Functions', () => {
     }
   }, 1000); // 1 second timeout
 
-  test('getUpcomingImportantDatesForAdvisors should handle empty advisor names', async () => {
-    const { getUpcomingImportantDatesForAdvisors } = require('./firebase');
+  test('getImportantDatesForAdvisors should handle empty advisor IDs', async () => {
+    const { getImportantDatesForAdvisors } = require('./firebase');
     
     try {
-      const result = await getUpcomingImportantDatesForAdvisors([]);
+      const result = await getImportantDatesForAdvisors([]);
       expect(result).toEqual([]);
     } catch (error) {
       // Expected to fail in test environment, but should handle empty arrays
@@ -55,11 +56,11 @@ describe('Important Dates Functions', () => {
     }
   });
 
-  test('getUpcomingImportantDatesForAdvisors should handle null advisor names', async () => {
-    const { getUpcomingImportantDatesForAdvisors } = require('./firebase');
+  test('getImportantDatesForAdvisors should handle null advisor IDs', async () => {
+    const { getImportantDatesForAdvisors } = require('./firebase');
     
     try {
-      const result = await getUpcomingImportantDatesForAdvisors(null);
+      const result = await getImportantDatesForAdvisors(null);
       expect(result).toEqual([]);
     } catch (error) {
       // Expected to fail in test environment, but should handle null input
@@ -68,21 +69,21 @@ describe('Important Dates Functions', () => {
   });
 
   // Test function signatures
-  test('updateAdvisorImportantDate should accept date ID and updates', () => {
-    const { updateAdvisorImportantDate } = require('./firebase');
+  test('updateImportantDate should accept date ID and updates', () => {
+    const { updateImportantDate } = require('./firebase');
     
     // Function should exist and be callable
     expect(() => {
-      updateAdvisorImportantDate('test-date-id', { title: 'Updated Title' });
+      updateImportantDate('test-date-id', { title: 'Updated Title' });
     }).not.toThrow();
   });
 
-  test('deleteAdvisorImportantDate should accept date ID', () => {
-    const { deleteAdvisorImportantDate } = require('./firebase');
+  test('deleteImportantDate should accept date ID', () => {
+    const { deleteImportantDate } = require('./firebase');
     
     // Function should exist and be callable
     expect(() => {
-      deleteAdvisorImportantDate('test-date-id');
+      deleteImportantDate('test-date-id');
     }).not.toThrow();
   });
 
@@ -91,17 +92,17 @@ describe('Important Dates Functions', () => {
     // Test that the expected structure matches what we're building
     const expectedDateStructure = {
       id: 'string',
-      advisor_id: 'string',
+      advisorId: 'string or null',
       title: 'string',
       description: 'string or null',
       date: 'string', // YYYY-MM-DD format
-      created_at: 'timestamp',
-      updated_at: 'timestamp'
+      createdAt: 'timestamp',
+      updatedAt: 'timestamp'
     };
 
     // This is more of a documentation test to ensure we maintain consistency
     expect(typeof expectedDateStructure.id).toBe('string');
-    expect(typeof expectedDateStructure.advisor_id).toBe('string');
+    expect(typeof expectedDateStructure.advisorId).toBe('string');
     expect(typeof expectedDateStructure.title).toBe('string');
     expect(typeof expectedDateStructure.date).toBe('string');
   });
