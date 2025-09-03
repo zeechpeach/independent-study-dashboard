@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2 UI/UX Demo - Independent Study Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Line clamp utilities */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        /* Custom hover effects */
+        .hover-scale:hover { transform: scale(1.05); }
+        .hover-lift:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-6 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                Phase 2 UI/UX Improvements Demo
+            </h1>
+            <p class="text-gray-600">
+                Showcasing the new interactive cards, segmented control, and improved design system
+            </p>
+            
+            <div class="mt-4 flex gap-4">
+                <button 
+                    onclick="toggleSkeletons()" 
+                    class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                    id="skeletonToggle"
+                >
+                    Show Skeleton Loaders
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div id="mainContent" class="space-y-8">
+            <!-- Quick Actions Demo -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    Quick Actions (Redesigned)
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Primary Action -->
+                    <div class="group p-4 rounded-lg border bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300 cursor-pointer transition-all duration-200 hover-lift">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-blue-900 transition-colors duration-200">
+                                    Pre-Meeting Reflection
+                                </h3>
+                                <p class="text-sm text-blue-700 transition-colors duration-200">
+                                    Prepare for your next meeting
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Actions -->
+                    <div class="group p-4 rounded-lg border bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-all duration-200 hover-lift">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900 transition-colors duration-200">
+                                    Post-Meeting Summary
+                                </h3>
+                                <p class="text-sm text-gray-600 transition-colors duration-200">
+                                    Document insights and action items
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group p-4 rounded-lg border bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-all duration-200 hover-lift">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900 transition-colors duration-200">
+                                    Manage Goals
+                                </h3>
+                                <p class="text-sm text-gray-600 transition-colors duration-200">
+                                    Track progress and set new goals
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group p-4 rounded-lg border bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-all duration-200 hover-lift">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900 transition-colors duration-200">
+                                    Schedule Meeting
+                                </h3>
+                                <p class="text-sm text-gray-600 transition-colors duration-200">
+                                    Book time with your advisor
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segmented Control Demo -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-900">Segmented Control (Goal Filters)</h2>
+                <div class="flex justify-center">
+                    <div class="inline-flex bg-gray-100 rounded-lg p-1">
+                        <button onclick="setFilter('all')" class="filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap bg-white text-gray-900 shadow-sm" data-filter="all">
+                            All Goals <span class="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">5</span>
+                        </button>
+                        <button onclick="setFilter('active')" class="filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap text-gray-600 hover:text-gray-900" data-filter="active">
+                            Active <span class="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600">2</span>
+                        </button>
+                        <button onclick="setFilter('completed')" class="filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap text-gray-600 hover:text-gray-900" data-filter="completed">
+                            Completed <span class="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600">1</span>
+                        </button>
+                        <button onclick="setFilter('overdue')" class="filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap text-gray-600 hover:text-gray-900" data-filter="overdue">
+                            Overdue <span class="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600">1</span>
+                        </button>
+                        <button onclick="setFilter('not_started')" class="filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap text-gray-600 hover:text-gray-900" data-filter="not_started">
+                            Not Started <span class="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600">1</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Cards Demo -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Goal Preview Cards -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Interactive Goal Cards
+                    </h2>
+                    <div class="space-y-3">
+                        <!-- Goal Card 1 -->
+                        <div class="group p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                            <div class="flex items-start justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900 truncate flex-1 group-hover:text-blue-600 transition-colors duration-200">
+                                    Complete React Component Library
+                                </h4>
+                                <div class="flex items-center gap-2 ml-2">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                        Active
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Due Feb 15, 2024</span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-2">
+                                Build reusable UI components for the dashboard including cards, modals, and form elements
+                            </p>
+                        </div>
+
+                        <!-- Goal Card 2 -->
+                        <div class="group p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                            <div class="flex items-start justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900 truncate flex-1 group-hover:text-blue-600 transition-colors duration-200">
+                                    Learn Advanced TypeScript
+                                </h4>
+                                <div class="flex items-center gap-2 ml-2">
+                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                    </svg>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                        Overdue
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Due Jan 30, 2024</span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-2">
+                                Master generics, utility types, and advanced patterns for better code quality
+                            </p>
+                        </div>
+
+                        <!-- Goal Card 3 -->
+                        <div class="group p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                            <div class="flex items-start justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900 truncate flex-1 group-hover:text-blue-600 transition-colors duration-200">
+                                    Design System Documentation
+                                </h4>
+                                <div class="flex items-center gap-2 ml-2">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                        Not Started
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span>Due Mar 01, 2024</span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-2">
+                                Create comprehensive documentation for our design system
+                            </p>
+                        </div>
+                    </div>
+                    <div class="pt-2">
+                        <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View All Goals →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reflection Cards -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        Interactive Reflection Cards
+                    </h2>
+                    <div class="space-y-3">
+                        <!-- Reflection Card 1 -->
+                        <div class="group p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            Pre-Meeting
+                                        </span>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500">
+                                    Jan 15, 2024
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-3">
+                                Successfully implemented the new dashboard layout with improved card components. The user experience is much cleaner now with better visual hierarchy.
+                            </p>
+                        </div>
+
+                        <!-- Reflection Card 2 -->
+                        <div class="group p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                            Post-Meeting
+                                        </span>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500">
+                                    Jan 12, 2024
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-3">
+                                Learned about micro-interactions and their impact on user engagement. Discussed the importance of skeleton loaders for perceived performance.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="pt-2 flex gap-3">
+                        <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            New Reflection
+                        </button>
+                        <span class="text-gray-300">•</span>
+                        <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View All Reflections →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Design Improvements Notes -->
+            <div class="bg-white rounded-lg p-6 border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Key Improvements</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-2">Visual Enhancements</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• Removed redundant edit icon buttons</li>
+                            <li>• Replaced gradient buttons with flat design</li>
+                            <li>• Added subtle hover animations and micro-interactions</li>
+                            <li>• Improved visual hierarchy with better spacing</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-2">Interaction Improvements</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• Cards are now fully clickable for modal opening</li>
+                            <li>• Segmented control replaces cramped filter buttons</li>
+                            <li>• Quick actions redesigned as responsive grid cards</li>
+                            <li>• Added skeleton loaders for better perceived performance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skeleton Content (hidden by default) -->
+        <div id="skeletonContent" class="space-y-8 hidden">
+            <!-- Skeleton Demo -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-900">Skeleton Loading States</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Skeleton Quick Actions -->
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="bg-gray-200 animate-pulse rounded h-4 w-32 mb-1"></div>
+                                <div class="bg-gray-200 animate-pulse rounded h-3 w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="bg-gray-200 animate-pulse rounded h-4 w-32 mb-1"></div>
+                                <div class="bg-gray-200 animate-pulse rounded h-3 w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="bg-gray-200 animate-pulse rounded h-4 w-32 mb-1"></div>
+                                <div class="bg-gray-200 animate-pulse rounded h-3 w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="bg-gray-200 animate-pulse rounded h-4 w-32 mb-1"></div>
+                                <div class="bg-gray-200 animate-pulse rounded h-3 w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Skeleton Cards -->
+                    <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="bg-gray-200 animate-pulse rounded h-5 w-3/5 mb-2"></div>
+                            <div class="bg-gray-200 animate-pulse rounded-full h-5 w-15"></div>
+                        </div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-full mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-4/5 mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3 w-30"></div>
+                    </div>
+                    <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="bg-gray-200 animate-pulse rounded h-5 w-3/5 mb-2"></div>
+                            <div class="bg-gray-200 animate-pulse rounded-full h-5 w-15"></div>
+                        </div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-full mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-4/5 mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3 w-30"></div>
+                    </div>
+                    <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="bg-gray-200 animate-pulse rounded h-5 w-3/5 mb-2"></div>
+                            <div class="bg-gray-200 animate-pulse rounded-full h-5 w-15"></div>
+                        </div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-full mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3.5 w-4/5 mb-2"></div>
+                        <div class="bg-gray-200 animate-pulse rounded h-3 w-30"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let showingSkeletons = false;
+
+        function toggleSkeletons() {
+            const mainContent = document.getElementById('mainContent');
+            const skeletonContent = document.getElementById('skeletonContent');
+            const toggleBtn = document.getElementById('skeletonToggle');
+            
+            showingSkeletons = !showingSkeletons;
+            
+            if (showingSkeletons) {
+                mainContent.classList.add('hidden');
+                skeletonContent.classList.remove('hidden');
+                toggleBtn.textContent = 'Hide Skeleton Loaders';
+            } else {
+                mainContent.classList.remove('hidden');
+                skeletonContent.classList.add('hidden');
+                toggleBtn.textContent = 'Show Skeleton Loaders';
+            }
+        }
+
+        function setFilter(filter) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.className = 'filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap bg-white text-gray-900 shadow-sm';
+                } else {
+                    btn.className = 'filter-btn px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap text-gray-600 hover:text-gray-900';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

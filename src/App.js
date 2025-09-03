@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
+import UIDemo from './pages/UIDemo';
 import './styles/globals.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [showUIDemo, setShowUIDemo] = useState(false);
 
   // Auth state listener with onboarding check
   React.useEffect(() => {
@@ -158,6 +160,30 @@ function App() {
     );
   }
 
+  // Show UI Demo if requested
+  if (showUIDemo) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="header">
+          <div className="container">
+            <div className="header-content">
+              <div className="logo">
+                Independent Study Dashboard - UI Demo
+              </div>
+              <button
+                onClick={() => setShowUIDemo(false)}
+                className="btn btn-secondary btn-sm"
+              >
+                Back to Login
+              </button>
+            </div>
+          </div>
+        </header>
+        <UIDemo />
+      </div>
+    );
+  }
+
   // Ultra-simple login page
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
@@ -176,7 +202,7 @@ function App() {
         )}
 
         {/* Single Sign In Button */}
-        <div className="flex justify-center mb-12">
+        <div className="flex flex-col gap-4 items-center mb-12">
           <button
             onClick={handleLogin}
             disabled={loading}
@@ -207,6 +233,17 @@ function App() {
                 Continue with Google
               </>
             )}
+          </button>
+          
+          <div className="text-center">
+            <span className="text-gray-400 text-sm">or</span>
+          </div>
+          
+          <button
+            onClick={() => setShowUIDemo(true)}
+            className="btn btn-outline px-8 py-3"
+          >
+            View Phase 2 UI Demo
           </button>
         </div>
 

@@ -4,6 +4,7 @@ import { GOAL_STATUS, isGoalOverdue, goalDisplayStatus } from '../../utils/goals
 import { isValidTargetDate } from '../../utils/dates';
 import GoalCard from './GoalCard';
 import GoalModal from './GoalModal';
+import SegmentedControl from '../ui/SegmentedControl';
 
 const GoalTracker = ({ 
   user, 
@@ -138,38 +139,19 @@ const GoalTracker = ({
         </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 mb-6">
-        <nav className="flex space-x-1">
-          {[
-            { key: 'all', label: 'All Goals', count: goalCounts.all },
-            { key: 'active', label: 'Active', count: goalCounts.active },
-            { key: 'completed', label: 'Completed', count: goalCounts.completed },
-            { key: 'overdue', label: 'Overdue', count: goalCounts.overdue },
-            { key: 'not_started', label: 'Not Started', count: goalCounts.not_started }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                filter === tab.key
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-              }`}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                  filter === tab.key
-                    ? 'bg-blue-400 text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+      {/* Filter Segmented Control */}
+      <div className="flex justify-center mb-6">
+        <SegmentedControl
+          options={[
+            { value: 'all', label: 'All Goals', count: goalCounts.all },
+            { value: 'active', label: 'Active', count: goalCounts.active },
+            { value: 'completed', label: 'Completed', count: goalCounts.completed },
+            { value: 'overdue', label: 'Overdue', count: goalCounts.overdue },
+            { value: 'not_started', label: 'Not Started', count: goalCounts.not_started }
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
       </div>
 
       {/* Goals List */}
