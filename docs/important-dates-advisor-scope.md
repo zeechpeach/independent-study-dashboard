@@ -268,6 +268,90 @@ collection('importantDates').where('advisorId', 'in', batch).orderBy('date')
 2. Check `getImportantDatesForAdvisors` includes null query
 3. Ensure security rules allow global date access
 
+#### Advisor Important Dates Spinner Issue
+**Problem**: AdvisorImportantDates component shows infinite loading spinner and never loads dates.
+
+**Root Cause**: Inconsistent user object properties - sometimes `user.id`, sometimes `user.uid`.
+
+**Symptoms**:
+- Loading spinner never disappears
+- No error messages shown
+- fetchImportantDates never executes properly
+- Component gets stuck in loading state
+
+**Solution**: Implement fallback logic in AdvisorImportantDates.js:
+
+```javascript
+// 1. Add fallback for user ID detection
+const fetchImportantDates = async () => {
+  const advisorId = user?.id || user?.uid;
+  if (!advisorId) {
+    setLoading(false); // Clear loading when no valid ID
+    setError('No advisor ID available');
+    return;
+  }
+  
+  try {
+    setLoading(true);
+    setError(null);
+    const dates = await getAdvisorImportantDates(advisorId);
+    setImportantDates(dates);
+  } catch (err) {
+    console.error('Error fetching advisor important dates:', err);
+    setError('Failed to load important dates');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// 2. Update dependency array to watch both properties
+useEffect(() => {
+  fetchImportantDates();
+}, [user?.id, user?.uid]); // Watch both possible ID properties
+
+// 3. Update handlers to use fallback ID
+const handleCreateDate = async (dateData) => {
+  try {
+    const advisorId = user?.id || user?.uid;
+    await createImportantDate(dateData, advisorId);
+    await fetchImportantDates();
+  } catch (error) {
+    console.error('Error creating important date:', error);
+    throw error;
+  }
+};
+
+// 4. Update component props
+return (
+  <ImportantDatesManager
+    importantDates={importantDates}
+    onBack={onBack}
+    onCreateDate={handleCreateDate}
+    onUpdateDate={handleUpdateDate}
+    onDeleteDate={handleDeleteDate}
+    mode="advisor"
+    currentUserId={user?.id || user?.uid}
+  />
+);
+```
+
+**Security Rule Considerations**:
+If using `userType == 'advisor'` for authentication:
+```javascript
+// Update Firestore rules to handle both ID formats
+match /importantDates/{dateId} {
+  allow read: if isSignedIn() && (isAdmin() || hasAdvisor(resource.data.advisorId));
+  allow create: if isAdmin() || (
+    (userType() == 'advisor' || isAdvisor()) && 
+    request.resource.data.advisorId == request.auth.uid
+  );
+  allow update, delete: if isAdmin() || (
+    (userType() == 'advisor' || isAdvisor()) && 
+    resource.data.advisorId == request.auth.uid
+  );
+}
+```
+
 ### Debug Queries
 ```javascript
 // Check what dates a student should see
