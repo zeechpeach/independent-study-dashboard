@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
+import AppShell from './components/shared/AppShell';
 import { Button } from './components/ui';
 import './styles/globals.css';
 
@@ -104,66 +105,27 @@ function App() {
   // If user is logged in and onboarded, show dashboard
   if (user && userProfile?.onboardingComplete) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="header">
-          <div className="container">
-            <div className="header-content">
-              <div className="logo">
-                Independent Study Dashboard
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    {user.displayName}
-                  </span>
-                  {isAdmin && (
-                    <span className="status status-info text-xs">Admin</span>
-                  )}
-                  {userProfile?.userType && (
-                    <span className="status status-success text-xs">
-                      {userProfile.userType}
-                    </span>
-                  )}
-                </div>
-                
-                {isAdmin && (
-                  <button
-                    onClick={() => setShowAdminDashboard(!showAdminDashboard)}
-                    className="btn btn-sm btn-secondary"
-                  >
-                    {showAdminDashboard ? 'Student View' : 'Admin View'}
-                  </button>
-                )}
-                
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="main-content">
-          <div className="container">
-            {showAdminDashboard ? (
-              <AdminDashboard 
-                user={user} 
-                userProfile={userProfile}
-                onBack={() => setShowAdminDashboard(false)} 
-              />
-            ) : (
-              <StudentDashboard 
-                user={user}
-                userProfile={userProfile}
-              />
-            )}
-          </div>
-        </main>
-      </div>
+      <AppShell
+        user={user}
+        userProfile={userProfile}
+        isAdmin={isAdmin}
+        onLogout={handleLogout}
+        onToggleAdminView={() => setShowAdminDashboard(!showAdminDashboard)}
+        showAdminDashboard={showAdminDashboard}
+      >
+        {showAdminDashboard ? (
+          <AdminDashboard 
+            user={user} 
+            userProfile={userProfile}
+            onBack={() => setShowAdminDashboard(false)} 
+          />
+        ) : (
+          <StudentDashboard 
+            user={user}
+            userProfile={userProfile}
+          />
+        )}
+      </AppShell>
     );
   }
 
