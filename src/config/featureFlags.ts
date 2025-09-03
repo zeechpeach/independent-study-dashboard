@@ -15,8 +15,8 @@ export interface FeatureFlags {
 export const featureFlags: FeatureFlags = {
   // Default to true for new advisor layout structure
   advisorLayoutV2: true,
-  // Default to false for advisor student list preview
-  advisorStudentListPreview: false,
+  // Default to true for advisor student list preview (Phase 3B production launch)
+  advisorStudentListPreview: true,
 };
 
 /**
