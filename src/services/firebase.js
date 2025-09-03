@@ -296,10 +296,11 @@ export const getUserMeetings = async (userId) => {
 };
 
 // Important dates functions
-export const createImportantDate = async (dateData) => {
+export const createImportantDate = async (dateData, advisorId = null) => {
   try {
     const docRef = await addDoc(collection(db, 'importantDates'), {
       ...dateData,
+      advisorId: advisorId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -344,6 +345,94 @@ export const getAllImportantDates = async () => {
     }));
   } catch (error) {
     console.error('Error getting important dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all important dates for a specific advisor
+ * @param {string} advisorId - The advisor's user ID
+ * @returns {Promise<Array>} Array of important dates
+ */
+export const getAdvisorImportantDates = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'importantDates'),
+      where('advisorId', '==', advisorId),
+      orderBy('date', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisor important dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get important dates for multiple advisors with batching and global dates
+ * @param {Array<string>} advisorIds - Array of advisor IDs
+ * @returns {Promise<Array>} Array of important dates (advisor-specific + global)
+ */
+export const getImportantDatesForAdvisors = async (advisorIds) => {
+  try {
+    if (!advisorIds || advisorIds.length === 0) {
+      // Return only global dates if no advisors specified
+      const q = query(
+        collection(db, 'importantDates'),
+        where('advisorId', '==', null),
+        orderBy('date', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+
+    const allDates = new Map(); // Use Map to handle duplicates by ID
+    
+    // Always get global dates (advisorId === null)
+    const globalQuery = query(
+      collection(db, 'importantDates'),
+      where('advisorId', '==', null),
+      orderBy('date', 'asc')
+    );
+    const globalSnapshot = await getDocs(globalQuery);
+    globalSnapshot.docs.forEach(doc => {
+      allDates.set(doc.id, { id: doc.id, ...doc.data() });
+    });
+
+    // Batch advisor queries due to Firestore 'in' limit of 10
+    const batchSize = 10;
+    for (let i = 0; i < advisorIds.length; i += batchSize) {
+      const batch = advisorIds.slice(i, i + batchSize);
+      
+      const q = query(
+        collection(db, 'importantDates'),
+        where('advisorId', 'in', batch),
+        orderBy('date', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      querySnapshot.docs.forEach(doc => {
+        allDates.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    }
+
+    // Convert Map values to array and sort by date
+    const sortedDates = Array.from(allDates.values()).sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return 0;
+    });
+
+    return sortedDates;
+  } catch (error) {
+    console.error('Error getting important dates for advisors:', error);
     throw error;
   }
 };

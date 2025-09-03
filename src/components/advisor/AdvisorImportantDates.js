@@ -4,26 +4,28 @@ import {
   createImportantDate, 
   updateImportantDate, 
   deleteImportantDate, 
-  getAllImportantDates 
+  getAdvisorImportantDates 
 } from '../../services/firebase';
 
-const ImportantDates = ({ user, onBack }) => {
+const AdvisorImportantDates = ({ user, onBack }) => {
   const [importantDates, setImportantDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchImportantDates();
-  }, []);
+  }, [user?.id]);
 
   const fetchImportantDates = async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
       setError(null);
-      const dates = await getAllImportantDates();
+      const dates = await getAdvisorImportantDates(user.id);
       setImportantDates(dates);
     } catch (err) {
-      console.error('Error fetching important dates:', err);
+      console.error('Error fetching advisor important dates:', err);
       setError('Failed to load important dates');
     } finally {
       setLoading(false);
@@ -32,9 +34,8 @@ const ImportantDates = ({ user, onBack }) => {
 
   const handleCreateDate = async (dateData) => {
     try {
-      // Admin can create global or advisor-specific dates
-      const advisorId = dateData.advisorId === 'global' ? null : dateData.advisorId;
-      await createImportantDate(dateData, advisorId);
+      // For advisors, always set their ID as the advisorId
+      await createImportantDate(dateData, user.id);
       await fetchImportantDates();
     } catch (error) {
       console.error('Error creating important date:', error);
@@ -93,10 +94,10 @@ const ImportantDates = ({ user, onBack }) => {
       onCreateDate={handleCreateDate}
       onUpdateDate={handleUpdateDate}
       onDeleteDate={handleDeleteDate}
-      mode="admin"
+      mode="advisor"
       currentUserId={user?.id}
     />
   );
 };
 
-export default ImportantDates;
+export default AdvisorImportantDates;
