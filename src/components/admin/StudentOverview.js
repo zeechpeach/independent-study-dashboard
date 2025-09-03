@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { User, BookOpen, Target, Calendar, TrendingUp, AlertTriangle, Eye, MessageCircle } from 'lucide-react';
+import { User, BookOpen, Target, Calendar, TrendingUp, AlertTriangle, Eye } from 'lucide-react';
 
-const StudentOverview = ({ users, reflections, goals, meetings, onBack, onSelectStudent }) => {
+const StudentOverview = ({ users, reflections, goals, meetings, onBack }) => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [filter, setFilter] = useState('all'); // all, active, needs-attention
 
@@ -65,14 +65,7 @@ const StudentOverview = ({ users, reflections, goals, meetings, onBack, onSelect
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+
 
   const formatDaysAgo = (days) => {
     if (days === null) return 'Never';
@@ -81,12 +74,7 @@ const StudentOverview = ({ users, reflections, goals, meetings, onBack, onSelect
     return `${days} days ago`;
   };
 
-  const getEngagementColor = (data) => {
-    if (data.totalReflections === 0 && data.goals.length === 0) return 'text-gray-500';
-    if (data.needsAttention) return 'text-red-600';
-    if (data.totalReflections >= 5 && data.activeGoals > 0) return 'text-green-600';
-    return 'text-yellow-600';
-  };
+
 
   const getEngagementLevel = (data) => {
     if (data.totalReflections === 0 && data.goals.length === 0) return 'No Activity';
