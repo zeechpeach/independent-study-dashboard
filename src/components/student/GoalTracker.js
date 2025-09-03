@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Plus, Edit3, Trash2, Calendar, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Target, Plus } from 'lucide-react';
+import { GOAL_STATUS, isGoalOverdue, goalDisplayStatus } from '../../utils/goals';
+import { isValidTargetDate } from '../../utils/dates';
+import GoalCard from './GoalCard';
+import GoalModal from './GoalModal';
 
 const GoalTracker = ({ 
   user, 
@@ -12,6 +16,8 @@ const GoalTracker = ({
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [filter, setFilter] = useState('all'); // all, active, completed, overdue
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   const openForm = (goal = null) => {
     setEditingGoal(goal);
@@ -23,23 +29,26 @@ const GoalTracker = ({
     setEditingGoal(null);
   };
 
+  const openGoalModal = (goal) => {
+    setSelectedGoal(goal);
+    setShowGoalModal(true);
+  };
+
+  const closeGoalModal = () => {
+    setSelectedGoal(null);
+    setShowGoalModal(false);
+  };
+
   const getGoalsByStatus = () => {
-    const now = new Date();
-    
     return goals.map(goal => {
-      const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
-      let status = goal.status || 'active';
+      const status = goal.status || GOAL_STATUS.ACTIVE;
+      const displayStatus = goalDisplayStatus(goal);
       
-      // Auto-determine status based on dates and completion
-      if (goal.progress >= 100 || status === 'completed') {
-        status = 'completed';
-      } else if (targetDate && targetDate < now && status !== 'completed') {
-        status = 'overdue';
-      } else if (status !== 'paused') {
-        status = 'active';
-      }
-      
-      return { ...goal, computedStatus: status };
+      return { 
+        ...goal, 
+        computedStatus: isGoalOverdue(goal) ? 'overdue' : status,
+        displayStatus
+      };
     });
   };
 
@@ -48,43 +57,21 @@ const GoalTracker = ({
     
     switch (filter) {
       case 'active':
-        return goalsWithStatus.filter(g => g.computedStatus === 'active');
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.ACTIVE);
       case 'completed':
-        return goalsWithStatus.filter(g => g.computedStatus === 'completed');
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.COMPLETED);
       case 'overdue':
         return goalsWithStatus.filter(g => g.computedStatus === 'overdue');
-      case 'paused':
-        return goalsWithStatus.filter(g => g.computedStatus === 'paused');
+      case 'not_started':
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.NOT_STARTED);
       default:
         return goalsWithStatus;
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'overdue':
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case 'paused':
-        return <Clock className="w-4 h-4 text-gray-600" />;
-      default:
-        return <Target className="w-4 h-4 text-blue-600" />;
-    }
-  };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'status-success';
-      case 'overdue':
-        return 'status-danger';
-      case 'paused':
-        return 'text-gray-500';
-      default:
-        return 'status-info';
-    }
-  };
+
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No deadline';
@@ -98,10 +85,10 @@ const GoalTracker = ({
   const filteredGoals = getFilteredGoals();
   const goalCounts = {
     all: goals.length,
-    active: getGoalsByStatus().filter(g => g.computedStatus === 'active').length,
-    completed: getGoalsByStatus().filter(g => g.computedStatus === 'completed').length,
+    active: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.ACTIVE).length,
+    completed: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.COMPLETED).length,
     overdue: getGoalsByStatus().filter(g => g.computedStatus === 'overdue').length,
-    paused: getGoalsByStatus().filter(g => g.computedStatus === 'paused').length
+    not_started: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.NOT_STARTED).length
   };
 
   if (showForm) {
@@ -123,46 +110,63 @@ const GoalTracker = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-6 border border-green-200 shadow-sm">
         <div>
           <button
             onClick={onBack}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-2"
+            className="text-blue-600 hover:text-blue-800 text-sm mb-3 flex items-center gap-1 transition-colors"
           >
-            ← Back to Dashboard
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
-          <p className="text-gray-600">Manage your learning objectives and track progress</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Target className="w-8 h-8 text-green-600" />
+            </div>
+            Goal Tracker
+          </h1>
+          <p className="text-gray-600 mt-2">Manage your learning objectives and track your progress</p>
         </div>
         <button
           onClick={() => openForm()}
-          className="btn btn-primary"
+          className="btn btn-primary btn-lg shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
-          New Goal
+          <Plus className="w-5 h-5" />
+          Create New Goal
         </button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 mb-6">
+        <nav className="flex space-x-1">
           {[
             { key: 'all', label: 'All Goals', count: goalCounts.all },
             { key: 'active', label: 'Active', count: goalCounts.active },
             { key: 'completed', label: 'Completed', count: goalCounts.completed },
             { key: 'overdue', label: 'Overdue', count: goalCounts.overdue },
-            { key: 'paused', label: 'Paused', count: goalCounts.paused }
+            { key: 'not_started', label: 'Not Started', count: goalCounts.not_started }
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
                 filter === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
               }`}
             >
-              {tab.label} {tab.count > 0 && `(${tab.count})`}
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                  filter === tab.key
+                    ? 'bg-blue-400 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -194,78 +198,27 @@ const GoalTracker = ({
           </div>
         ) : (
           filteredGoals.map((goal) => (
-            <div key={goal.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    {getStatusIcon(goal.computedStatus)}
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {goal.title}
-                    </h3>
-                    <span className={`status ${getStatusColor(goal.computedStatus)} text-xs`}>
-                      {goal.computedStatus}
-                    </span>
-                  </div>
-                  
-                  {goal.description && (
-                    <p className="text-gray-600 mb-3">{goal.description}</p>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(goal.targetDate)}
-                    </div>
-                    {goal.category && (
-                      <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {goal.category}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="mb-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">Progress</span>
-                      <span className="text-sm text-gray-600">{goal.progress || 0}%</span>
-                    </div>
-                    <div className="progress">
-                      <div 
-                        className="progress-bar"
-                        style={{ width: `${goal.progress || 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {goal.successMetrics && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Success metrics: </span>
-                      <span className="text-gray-600">{goal.successMetrics}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openForm(goal)}
-                    className="text-gray-500 hover:text-gray-700 p-1"
-                    title="Edit goal"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteGoal(goal.id)}
-                    className="text-red-500 hover:text-red-700 p-1"
-                    title="Delete goal"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onClick={openGoalModal}
+              onEdit={openForm}
+              onDelete={onDeleteGoal}
+              formatDate={formatDate}
+            />
           ))
         )}
       </div>
+
+      {/* Goal Modal */}
+      <GoalModal
+        goal={selectedGoal}
+        isOpen={showGoalModal}
+        onClose={closeGoalModal}
+        onEdit={openForm}
+        onDelete={onDeleteGoal}
+        formatDate={formatDate}
+      />
     </div>
   );
 };
@@ -277,8 +230,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
     category: '',
     targetDate: '',
     successMetrics: '',
-    progress: 0,
-    status: 'active'
+    status: GOAL_STATUS.ACTIVE
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -291,8 +243,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
         category: goal.category || '',
         targetDate: goal.targetDate ? goal.targetDate.split('T')[0] : '',
         successMetrics: goal.successMetrics || '',
-        progress: goal.progress || 0,
-        status: goal.status || 'active'
+        status: goal.status || GOAL_STATUS.ACTIVE
       });
     }
   }, [goal]);
@@ -304,8 +255,8 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
       newErrors.title = 'Goal title is required';
     }
     
-    if (formData.targetDate && new Date(formData.targetDate) < new Date()) {
-      newErrors.targetDate = 'Target date cannot be in the past';
+    if (formData.targetDate && !isValidTargetDate(formData.targetDate)) {
+      newErrors.targetDate = 'Target date cannot be in the past (Pacific time)';
     }
     
     setErrors(newErrors);
@@ -323,8 +274,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
     try {
       await onSave({
         ...formData,
-        targetDate: formData.targetDate ? new Date(formData.targetDate).toISOString() : null,
-        progress: parseInt(formData.progress) || 0
+        targetDate: formData.targetDate ? new Date(formData.targetDate).toISOString() : null
       });
     } catch (error) {
       console.error('Error saving goal:', error);
@@ -419,32 +369,15 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
 
           <div className="grid grid-2">
             <div className="form-group">
-              <label className="form-label">Current Progress (%)</label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={formData.progress}
-                  onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
-                  className="flex-1"
-                />
-                <span className="text-lg font-semibold text-blue-600 w-12">
-                  {formData.progress}%
-                </span>
-              </div>
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Status</label>
               <select
                 className="form-select"
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
               >
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="completed">Completed</option>
+                <option value={GOAL_STATUS.NOT_STARTED}>Not Started</option>
+                <option value={GOAL_STATUS.ACTIVE}>Active</option>
+                <option value={GOAL_STATUS.COMPLETED}>Completed</option>
               </select>
             </div>
           </div>

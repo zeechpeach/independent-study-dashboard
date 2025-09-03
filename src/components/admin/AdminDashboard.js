@@ -21,7 +21,6 @@ const AdminDashboard = ({ user, onBack }) => {
   const [importantDates, setImportantDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('dashboard'); // dashboard, students, dates
-  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     fetchAllData();
@@ -189,7 +188,6 @@ const AdminDashboard = ({ user, onBack }) => {
         goals={goals}
         meetings={meetings}
         onBack={() => setActiveView('dashboard')}
-        onSelectStudent={setSelectedStudent}
       />
     );
   }

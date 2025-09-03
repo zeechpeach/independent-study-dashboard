@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Target, Calendar, Clock, Plus, Edit3 } from 'lucide-react';
 import ReflectionForm from './ReflectionForm';
 import GoalTracker from './GoalTracker';
+import CalendlyEmbed from '../shared/CalendlyEmbed';
 import { 
   createReflection, 
   updateReflection, 
@@ -26,6 +27,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [showGoalTracker, setShowGoalTracker] = useState(false);
   const [reflectionType, setReflectionType] = useState('pre-meeting');
   const [editingReflection, setEditingReflection] = useState(null);
+  const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
 
   // Wrap fetchUserData in useCallback to fix dependency warning
   const fetchUserData = useCallback(async () => {
@@ -163,7 +165,6 @@ const StudentDashboard = ({ user, userProfile }) => {
     const today = new Date();
     return meetings
       .filter(meeting => new Date(meeting.scheduledDate) >= today)
-      .slice(0, 2)
       .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
   };
 
@@ -218,35 +219,38 @@ const StudentDashboard = ({ user, userProfile }) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="flex gap-3 flex-wrap">
+      <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
             onClick={() => openReflectionForm('pre-meeting')}
-            className="btn btn-primary"
+            className="btn btn-primary group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-5 h-5 group-hover:rotate-3 transition-transform" />
             Pre-Meeting Reflection
           </button>
           <button
             onClick={() => openReflectionForm('post-meeting')}
-            className="btn btn-secondary"
+            className="btn btn-secondary group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-5 h-5 group-hover:rotate-3 transition-transform" />
             Post-Meeting Summary
           </button>
           <button
             onClick={() => setShowGoalTracker(true)}
-            className="btn btn-secondary"
+            className="btn btn-success group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
           >
-            <Target className="w-4 h-4" />
+            <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
             Manage Goals
           </button>
           <button 
-            onClick={() => window.open(getSchedulingLink(), '_blank')}
-            className="btn btn-secondary"
+            onClick={() => setShowCalendlyEmbed(true)}
+            className="btn btn-outline group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg border-blue-300 hover:border-blue-400"
           >
-            <Calendar className="w-4 h-4" />
+            <Calendar className="w-5 h-5 group-hover:bounce transition-transform" />
             Schedule Meeting
           </button>
         </div>
@@ -323,7 +327,7 @@ const StudentDashboard = ({ user, userProfile }) => {
               <h2 className="card-title">Upcoming Meetings</h2>
             </div>
             <button 
-              onClick={() => window.open(getSchedulingLink(), '_blank')}
+              onClick={() => setShowCalendlyEmbed(true)}
               className="btn btn-sm btn-secondary"
             >
               <Plus className="w-4 h-4" />
@@ -356,7 +360,7 @@ const StudentDashboard = ({ user, userProfile }) => {
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <p className="text-sm text-gray-600">No meetings scheduled</p>
                 <button 
-                  onClick={() => window.open(getSchedulingLink(), '_blank')}
+                  onClick={() => setShowCalendlyEmbed(true)}
                   className="btn btn-primary btn-sm mt-2"
                 >
                   Book a Meeting
@@ -456,6 +460,14 @@ const StudentDashboard = ({ user, userProfile }) => {
       <div className="text-sm text-gray-500 text-center">
         Having issues? Contact your coordinator at {process.env.REACT_APP_ADMIN_EMAIL}
       </div>
+
+      {/* Calendly Embed Modal */}
+      <CalendlyEmbed
+        isOpen={showCalendlyEmbed}
+        onClose={() => setShowCalendlyEmbed(false)}
+        schedulingLink={getSchedulingLink()}
+        userName={user?.displayName}
+      />
     </div>
   );
 };

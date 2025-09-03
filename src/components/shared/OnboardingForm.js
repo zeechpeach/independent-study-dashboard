@@ -100,7 +100,7 @@ const OnboardingForm = ({ user, onComplete }) => {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-xs">
+      <div className="w-full max-w-lg mx-auto">
         
         {/* Header */}
         <div className="text-center mb-6">
@@ -149,7 +149,13 @@ const OnboardingForm = ({ user, onComplete }) => {
               <h2 className="text-base font-semibold mb-3 text-center">What's your role?</h2>
               <div className="space-y-2">
                 <button
-                  onClick={() => setUserType('student')}
+                  onClick={() => {
+                    setUserType('student');
+                    if (step === 1) {
+                      setError('');
+                      setStep(2);
+                    }
+                  }}
                   className={`w-full p-3 border-2 rounded-lg text-left transition-all ${
                     userType === 'student'
                       ? 'border-green-600 bg-green-50 shadow-sm'
@@ -168,7 +174,13 @@ const OnboardingForm = ({ user, onComplete }) => {
                   </div>
                 </button>
                 <button
-                  onClick={() => setUserType('advisor')}
+                  onClick={() => {
+                    setUserType('advisor');
+                    if (step === 1) {
+                      setError('');
+                      setStep(2);
+                    }
+                  }}
                   className={`w-full p-3 border-2 rounded-lg text-left transition-all ${
                     userType === 'advisor'
                       ? 'border-green-600 bg-green-50 shadow-sm'
@@ -289,7 +301,7 @@ const OnboardingForm = ({ user, onComplete }) => {
               </button>
             )}
             
-            {step < 3 ? (
+            {step < 3 && step > 1 ? (
               <button
                 onClick={handleNext}
                 className="btn btn-primary btn-sm flex-1"
