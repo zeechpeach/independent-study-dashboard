@@ -3,9 +3,11 @@ import { signInWithGoogle, logOut, auth, getUserProfile } from './services/fireb
 import { onAuthStateChanged } from 'firebase/auth';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
+import AdvisorDashboard from './pages/AdvisorDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
 import AppShell from './components/shared/AppShell';
 import { Button } from './components/ui';
+import { isAdvisorLayoutV2Enabled } from './config/featureFlags.ts';
 import './styles/globals.css';
 
 function App() {
@@ -84,6 +86,8 @@ function App() {
   };
 
   const isAdmin = user?.email === process.env.REACT_APP_ADMIN_EMAIL || userProfile?.isAdmin;
+  const isAdvisor = userProfile?.userType === 'advisor';
+  const useNewAdvisorLayout = isAdvisorLayoutV2Enabled();
 
   // Show loading while checking auth state
   if (authLoading) {
@@ -104,21 +108,39 @@ function App() {
 
   // If user is logged in and onboarded, show dashboard
   if (user && userProfile?.onboardingComplete) {
-    return (
-      <AppShell
-        user={user}
-        userProfile={userProfile}
-        isAdmin={isAdmin}
-        onLogout={handleLogout}
-        onToggleAdminView={() => setShowAdminDashboard(!showAdminDashboard)}
-        showAdminDashboard={showAdminDashboard}
-      >
-        {showAdminDashboard ? (
+    // Determine which dashboard to show when admin view is toggled
+    const renderAdminOrAdvisorDashboard = () => {
+      if (isAdvisor && useNewAdvisorLayout) {
+        return (
+          <AdvisorDashboard
+            user={user}
+            userProfile={userProfile}
+            onBack={() => setShowAdminDashboard(false)}
+          />
+        );
+      } else {
+        return (
           <AdminDashboard 
             user={user} 
             userProfile={userProfile}
             onBack={() => setShowAdminDashboard(false)} 
           />
+        );
+      }
+    };
+
+    return (
+      <AppShell
+        user={user}
+        userProfile={userProfile}
+        isAdmin={isAdmin}
+        role={isAdvisor ? 'advisor' : 'student'}
+        onLogout={handleLogout}
+        onToggleAdminView={() => setShowAdminDashboard(!showAdminDashboard)}
+        showAdminDashboard={showAdminDashboard}
+      >
+        {showAdminDashboard ? (
+          renderAdminOrAdvisorDashboard()
         ) : (
           <StudentDashboard 
             user={user}
