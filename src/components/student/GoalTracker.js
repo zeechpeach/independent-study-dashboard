@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Plus, Edit3, Trash2, Calendar, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
-import { GOAL_STATUS, isGoalOverdue, goalDisplayStatus, getStatusClasses } from '../../utils/goals';
+import { Target, Plus } from 'lucide-react';
+import { GOAL_STATUS, isGoalOverdue, goalDisplayStatus } from '../../utils/goals';
+import { isValidTargetDate } from '../../utils/dates';
+import GoalCard from './GoalCard';
+import GoalModal from './GoalModal';
 
 const GoalTracker = ({ 
   user, 
@@ -13,6 +16,8 @@ const GoalTracker = ({
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [filter, setFilter] = useState('all'); // all, active, completed, overdue
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   const openForm = (goal = null) => {
     setEditingGoal(goal);
@@ -22,6 +27,16 @@ const GoalTracker = ({
   const closeForm = () => {
     setShowForm(false);
     setEditingGoal(null);
+  };
+
+  const openGoalModal = (goal) => {
+    setSelectedGoal(goal);
+    setShowGoalModal(true);
+  };
+
+  const closeGoalModal = () => {
+    setSelectedGoal(null);
+    setShowGoalModal(false);
   };
 
   const getGoalsByStatus = () => {
@@ -54,19 +69,7 @@ const GoalTracker = ({
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case GOAL_STATUS.COMPLETED:
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'overdue':
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case GOAL_STATUS.NOT_STARTED:
-        return <Clock className="w-4 h-4 text-gray-600" />;
-      case GOAL_STATUS.ACTIVE:
-      default:
-        return <Target className="w-4 h-4 text-blue-600" />;
-    }
-  };
+
 
 
 
@@ -178,68 +181,27 @@ const GoalTracker = ({
           </div>
         ) : (
           filteredGoals.map((goal) => (
-            <div key={goal.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    {getStatusIcon(goal.computedStatus)}
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {goal.title}
-                    </h3>
-                  </div>
-                  
-                  {goal.description && (
-                    <p className="text-gray-600 mb-3">{goal.description}</p>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(goal.targetDate)}
-                    </div>
-                    {goal.category && (
-                      <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {goal.category}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Status Display */}
-                  <div className="mb-3">
-                    <span className={getStatusClasses(goal.displayStatus.variant)}>
-                      {goal.displayStatus.label}
-                    </span>
-                  </div>
-                  
-                  {goal.successMetrics && (
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Success metrics: </span>
-                      <span className="text-gray-600">{goal.successMetrics}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openForm(goal)}
-                    className="text-gray-500 hover:text-gray-700 p-1"
-                    title="Edit goal"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteGoal(goal.id)}
-                    className="text-red-500 hover:text-red-700 p-1"
-                    title="Delete goal"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onClick={openGoalModal}
+              onEdit={openForm}
+              onDelete={onDeleteGoal}
+              formatDate={formatDate}
+            />
           ))
         )}
       </div>
+
+      {/* Goal Modal */}
+      <GoalModal
+        goal={selectedGoal}
+        isOpen={showGoalModal}
+        onClose={closeGoalModal}
+        onEdit={openForm}
+        onDelete={onDeleteGoal}
+        formatDate={formatDate}
+      />
     </div>
   );
 };
@@ -276,8 +238,8 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
       newErrors.title = 'Goal title is required';
     }
     
-    if (formData.targetDate && new Date(formData.targetDate) < new Date()) {
-      newErrors.targetDate = 'Target date cannot be in the past';
+    if (formData.targetDate && !isValidTargetDate(formData.targetDate)) {
+      newErrors.targetDate = 'Target date cannot be in the past (Pacific time)';
     }
     
     setErrors(newErrors);

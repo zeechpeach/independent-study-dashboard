@@ -1,3 +1,5 @@
+import { getPacificDate, convertToPacific } from './dates';
+
 // Goal status constants
 export const GOAL_STATUS = {
   NOT_STARTED: 'not_started',
@@ -8,14 +10,15 @@ export const GOAL_STATUS = {
 /**
  * Checks if a goal is overdue
  * A goal is overdue if its target date is before today and it's not completed
+ * Uses Pacific timezone for date comparison
  * @param {Object} goal - Goal object with targetDate and status
  * @returns {boolean} - True if goal is overdue
  */
 export const isGoalOverdue = (goal) => {
   if (!goal || !goal.targetDate) return false;
   
-  const today = new Date();
-  const targetDate = new Date(goal.targetDate);
+  const today = getPacificDate();
+  const targetDate = convertToPacific(goal.targetDate);
   
   // Reset time to start of day for accurate comparison
   today.setHours(0, 0, 0, 0);
