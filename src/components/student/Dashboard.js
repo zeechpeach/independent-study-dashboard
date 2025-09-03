@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Target, Calendar, Clock, Plus, Edit3 } from 'lucide-react';
+import { BookOpen, Target, Calendar, Clock, Plus } from 'lucide-react';
 import ReflectionForm from './ReflectionForm';
 import GoalTracker from './GoalTracker';
 import CalendlyEmbed from '../shared/CalendlyEmbed';
+import GoalPreviewCard from './GoalPreviewCard';
+import ReflectionCard from './ReflectionCard';
+import ReflectionModal from './ReflectionModal';
+import QuickActionCard from './QuickActionCard';
+import GoalModal from './GoalModal';
 import { 
   createReflection, 
   updateReflection, 
@@ -25,6 +30,10 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [loading, setLoading] = useState(true);
   const [showReflectionForm, setShowReflectionForm] = useState(false);
   const [showGoalTracker, setShowGoalTracker] = useState(false);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [selectedReflection, setSelectedReflection] = useState(null);
+  const [selectedGoal, setSelectedGoal] = useState(null);
   const [reflectionType, setReflectionType] = useState('pre-meeting');
   const [editingReflection, setEditingReflection] = useState(null);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
@@ -114,6 +123,7 @@ const StudentDashboard = ({ user, userProfile }) => {
     try {
       await deleteGoal(goalId);
       await fetchUserData();
+      closeGoalModal();
     } catch (error) {
       console.error('Error deleting goal:', error);
       throw error;
@@ -124,6 +134,37 @@ const StudentDashboard = ({ user, userProfile }) => {
     setReflectionType(type);
     setEditingReflection(reflection);
     setShowReflectionForm(true);
+  };
+
+  const openReflectionModal = (reflection) => {
+    setSelectedReflection(reflection);
+    setShowReflectionModal(true);
+  };
+
+  const closeReflectionModal = () => {
+    setSelectedReflection(null);
+    setShowReflectionModal(false);
+  };
+
+  const openGoalModal = (goal) => {
+    setSelectedGoal(goal);
+    setShowGoalModal(true);
+  };
+
+  const closeGoalModal = () => {
+    setSelectedGoal(null);
+    setShowGoalModal(false);
+  };
+
+  const handleEditReflection = (reflection) => {
+    openReflectionForm(reflection.type, reflection);
+  };
+
+  const handleEditGoal = (goal) => {
+    // Close goal modal and open goal tracker in edit mode
+    closeGoalModal();
+    setShowGoalTracker(true);
+    // We'll need to pass the goal to edit to GoalTracker
   };
 
   // Get the appropriate Calendly link
@@ -157,8 +198,17 @@ const StudentDashboard = ({ user, userProfile }) => {
     return reflections.slice(0, 3);
   };
 
-  const getActiveGoals = () => {
-    return goals.filter(goal => goal.status !== 'completed').slice(0, 3);
+  const getRelevantGoals = () => {
+    // Prioritize Active, then Not Started, then Overdue goals (if not already Active)
+    const activeGoals = goals.filter(goal => goal.status === 'active');
+    const notStartedGoals = goals.filter(goal => goal.status === 'not_started');
+    const overdueGoals = goals.filter(goal => {
+      const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
+      return isOverdue && goal.status !== 'active';
+    });
+    
+    const relevantGoals = [...activeGoals, ...notStartedGoals, ...overdueGoals];
+    return relevantGoals.slice(0, 4); // Limit to 3-4 most relevant
   };
 
   const getUpcomingMeetings = () => {
@@ -219,40 +269,37 @@ const StudentDashboard = ({ user, userProfile }) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           Quick Actions
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <button
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <QuickActionCard
+            icon={BookOpen}
+            title="Pre-Meeting Reflection"
+            subtitle="Prepare for your next meeting"
             onClick={() => openReflectionForm('pre-meeting')}
-            className="btn btn-primary group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-          >
-            <BookOpen className="w-5 h-5 group-hover:rotate-3 transition-transform" />
-            Pre-Meeting Reflection
-          </button>
-          <button
+            isPrimary={true}
+          />
+          <QuickActionCard
+            icon={BookOpen}
+            title="Post-Meeting Summary"
+            subtitle="Document insights and action items"
             onClick={() => openReflectionForm('post-meeting')}
-            className="btn btn-secondary group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-          >
-            <BookOpen className="w-5 h-5 group-hover:rotate-3 transition-transform" />
-            Post-Meeting Summary
-          </button>
-          <button
+          />
+          <QuickActionCard
+            icon={Target}
+            title="Manage Goals"
+            subtitle="Track progress and set new goals"
             onClick={() => setShowGoalTracker(true)}
-            className="btn btn-success group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg"
-          >
-            <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Manage Goals
-          </button>
-          <button 
+          />
+          <QuickActionCard
+            icon={Calendar}
+            title="Schedule Meeting"
+            subtitle="Book time with your advisor"
             onClick={() => setShowCalendlyEmbed(true)}
-            className="btn btn-outline group hover:scale-105 transition-transform duration-200 shadow-md hover:shadow-lg border-blue-300 hover:border-blue-400"
-          >
-            <Calendar className="w-5 h-5 group-hover:bounce transition-transform" />
-            Schedule Meeting
-          </button>
+          />
         </div>
       </div>
 
@@ -274,43 +321,31 @@ const StudentDashboard = ({ user, userProfile }) => {
             </button>
           </div>
           <div className="space-y-3">
-            {getActiveGoals().length > 0 ? (
-              getActiveGoals().map((goal, index) => (
-                <div key={goal.id || index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{goal.title || 'Untitled Goal'}</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {goal.description || 'No description'}
-                      </p>
-                      {goal.targetDate && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Due: {formatDate(goal.targetDate)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`status ${goal.status === 'on-track' ? 'status-success' : 'status-warning'}`}>
-                        {goal.status || 'active'}
-                      </span>
-                    </div>
-                  </div>
-                  {goal.progress && (
-                    <div className="progress mt-2">
-                      <div 
-                        className="progress-bar" 
-                        style={{ width: `${goal.progress || 0}%` }}
-                      ></div>
-                    </div>
-                  )}
+            {getRelevantGoals().length > 0 ? (
+              <>
+                {getRelevantGoals().map((goal, index) => (
+                  <GoalPreviewCard 
+                    key={goal.id || index} 
+                    goal={goal} 
+                    onClick={openGoalModal}
+                  />
+                ))}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowGoalTracker(true)}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    View All Goals →
+                  </button>
                 </div>
-              ))
+              </>
             ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">No active goals set yet</p>
+              <div className="p-6 bg-gray-50 rounded-lg text-center">
+                <Target className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No active goals set yet</p>
                 <button
                   onClick={() => setShowGoalTracker(true)}
-                  className="btn btn-primary btn-sm mt-2"
+                  className="btn btn-primary btn-sm"
                 >
                   Set Your First Goal
                 </button>
@@ -380,39 +415,37 @@ const StudentDashboard = ({ user, userProfile }) => {
           </div>
           <div className="space-y-3">
             {getRecentReflections().length > 0 ? (
-              getRecentReflections().map((reflection, index) => (
-                <div key={reflection.id || index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`status ${reflection.type === 'pre-meeting' ? 'status-info' : 'status-success'}`}>
-                          {reflection.type === 'pre-meeting' ? 'Pre-Meeting' : 'Post-Meeting'}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(reflection.createdAt?.toDate?.() || reflection.createdAt)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                        {reflection.accomplishments || reflection.keyInsights || 'No content'}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => openReflectionForm(reflection.type, reflection)}
-                        className="text-gray-500 hover:text-gray-700 p-1"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+              <>
+                {getRecentReflections().map((reflection, index) => (
+                  <ReflectionCard
+                    key={reflection.id || index}
+                    reflection={reflection}
+                    onClick={openReflectionModal}
+                  />
+                ))}
+                <div className="pt-2 flex gap-3">
+                  <button
+                    onClick={() => openReflectionForm('pre-meeting')}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    New Reflection
+                  </button>
+                  <span className="text-gray-300">•</span>
+                  <button
+                    onClick={() => {/* Navigate to reflections page if exists */}}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    View All Reflections →
+                  </button>
                 </div>
-              ))
+              </>
             ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">No reflections yet</p>
+              <div className="p-6 bg-gray-50 rounded-lg text-center">
+                <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No reflections yet</p>
                 <button
                   onClick={() => openReflectionForm('pre-meeting')}
-                  className="btn btn-primary btn-sm mt-2"
+                  className="btn btn-primary btn-sm"
                 >
                   Write Your First Reflection
                 </button>
@@ -460,6 +493,22 @@ const StudentDashboard = ({ user, userProfile }) => {
       <div className="text-sm text-gray-500 text-center">
         Having issues? Contact your coordinator at {process.env.REACT_APP_ADMIN_EMAIL}
       </div>
+
+      {/* Modals */}
+      <ReflectionModal
+        reflection={selectedReflection}
+        isOpen={showReflectionModal}
+        onClose={closeReflectionModal}
+        onEdit={handleEditReflection}
+      />
+      
+      <GoalModal
+        goal={selectedGoal}
+        isOpen={showGoalModal}
+        onClose={closeGoalModal}
+        onEdit={handleEditGoal}
+        onDelete={handleDeleteGoal}
+      />
 
       {/* Calendly Embed Modal */}
       <CalendlyEmbed
