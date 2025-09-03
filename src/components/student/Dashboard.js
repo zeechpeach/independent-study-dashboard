@@ -8,6 +8,7 @@ import ReflectionCard from './ReflectionCard';
 import ReflectionModal from './ReflectionModal';
 import QuickActionCard from './QuickActionCard';
 import GoalModal from './GoalModal';
+import SegmentedControl from '../ui/SegmentedControl';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import { 
   createReflection, 
@@ -38,6 +39,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [reflectionType, setReflectionType] = useState('pre-meeting');
   const [editingReflection, setEditingReflection] = useState(null);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
+  const [goalFilter, setGoalFilter] = useState('all');
 
   // Wrap fetchUserData in useCallback to fix dependency warning
   const fetchUserData = useCallback(async () => {
@@ -199,17 +201,62 @@ const StudentDashboard = ({ user, userProfile }) => {
     return reflections.slice(0, 3);
   };
 
-  const getRelevantGoals = () => {
-    // Prioritize Active, then Not Started, then Overdue goals (if not already Active)
-    const activeGoals = goals.filter(goal => goal.status === 'active');
-    const notStartedGoals = goals.filter(goal => goal.status === 'not_started');
-    const overdueGoals = goals.filter(goal => {
+  const getGoalCounts = () => {
+    const active = goals.filter(goal => goal.status === 'active').length;
+    const completed = goals.filter(goal => goal.status === 'completed').length;
+    const notStarted = goals.filter(goal => goal.status === 'not_started').length;
+    const overdue = goals.filter(goal => {
       const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
-      return isOverdue && goal.status !== 'active';
-    });
+      return isOverdue;
+    }).length;
+
+    return {
+      all: goals.length,
+      active,
+      completed,
+      not_started: notStarted,
+      overdue
+    };
+  };
+
+  const getFilteredGoals = () => {
+    const counts = getGoalCounts();
     
-    const relevantGoals = [...activeGoals, ...notStartedGoals, ...overdueGoals];
-    return relevantGoals.slice(0, 4); // Limit to 3-4 most relevant
+    switch (goalFilter) {
+      case 'active':
+        return goals.filter(goal => goal.status === 'active');
+      case 'completed':
+        return goals.filter(goal => goal.status === 'completed');
+      case 'not_started':
+        return goals.filter(goal => goal.status === 'not_started');
+      case 'overdue':
+        return goals.filter(goal => {
+          const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
+          return isOverdue;
+        });
+      default:
+        return goals;
+    }
+  };
+
+  const getRelevantGoals = () => {
+    const filteredGoals = getFilteredGoals();
+    
+    // If showing all goals, prioritize Active, then Not Started, then Overdue goals (if not already Active)
+    if (goalFilter === 'all') {
+      const activeGoals = goals.filter(goal => goal.status === 'active');
+      const notStartedGoals = goals.filter(goal => goal.status === 'not_started');
+      const overdueGoals = goals.filter(goal => {
+        const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
+        return isOverdue && goal.status !== 'active';
+      });
+      
+      const relevantGoals = [...activeGoals, ...notStartedGoals, ...overdueGoals];
+      return relevantGoals.slice(0, 3); // Limit to 3 most relevant
+    }
+    
+    // For specific filters, show up to 3
+    return filteredGoals.slice(0, 3);
   };
 
   const getUpcomingMeetings = () => {
@@ -221,59 +268,64 @@ const StudentDashboard = ({ user, userProfile }) => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        {/* Welcome Header Skeleton */}
-        <div className="space-y-2">
-          <div className="bg-gray-200 animate-pulse rounded h-8 w-80"></div>
-          <div className="bg-gray-200 animate-pulse rounded h-5 w-64"></div>
-        </div>
-
-        {/* Quick Actions Skeleton */}
-        <div className="space-y-4">
-          <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SkeletonQuickAction />
-            <SkeletonQuickAction />
-            <SkeletonQuickAction />
-            <SkeletonQuickAction />
+      <div className="dashboard-layout">
+        <div className="dashboard-main space-y-6">
+          {/* Welcome Header Skeleton */}
+          <div className="space-y-2">
+            <div className="bg-gray-200 animate-pulse rounded h-8 w-80"></div>
+            <div className="bg-gray-200 animate-pulse rounded h-5 w-64"></div>
           </div>
-        </div>
 
-        {/* Dashboard Grid Skeleton */}
-        <div className="grid grid-2">
+          {/* Quick Actions Skeleton */}
+          <div className="space-y-4">
+            <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SkeletonQuickAction />
+              <SkeletonQuickAction />
+              <SkeletonQuickAction />
+              <SkeletonQuickAction />
+            </div>
+          </div>
+
+          {/* Goals Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
               <div className="bg-gray-200 animate-pulse rounded h-8 w-24"></div>
             </div>
+            <div className="bg-gray-200 animate-pulse rounded h-10 w-96 mb-4"></div>
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard />
               <SkeletonCard />
             </div>
           </div>
-          
+
+          {/* Reflections Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <div className="bg-gray-200 animate-pulse rounded h-6 w-40"></div>
-              <div className="bg-gray-200 animate-pulse rounded h-8 w-24"></div>
             </div>
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard />
             </div>
           </div>
-          
+        </div>
+
+        <div className="dashboard-sidebar space-y-6">
+          {/* Meetings Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
-              <div className="bg-gray-200 animate-pulse rounded h-6 w-36"></div>
+              <div className="bg-gray-200 animate-pulse rounded h-6 w-24"></div>
+              <div className="bg-gray-200 animate-pulse rounded h-8 w-16"></div>
             </div>
             <div className="space-y-3">
               <SkeletonCard />
-              <SkeletonCard />
             </div>
           </div>
-          
+
+          {/* Important Dates Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
@@ -281,6 +333,21 @@ const StudentDashboard = ({ user, userProfile }) => {
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard />
+            </div>
+          </div>
+
+          {/* Stats Skeleton */}
+          <div className="card">
+            <div className="bg-gray-200 animate-pulse rounded h-6 w-32 mb-4"></div>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <div className="bg-gray-200 animate-pulse rounded h-4 w-20"></div>
+                <div className="bg-gray-200 animate-pulse rounded h-4 w-8"></div>
+              </div>
+              <div className="flex justify-between">
+                <div className="bg-gray-200 animate-pulse rounded h-4 w-24"></div>
+                <div className="bg-gray-200 animate-pulse rounded h-4 w-8"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -316,62 +383,62 @@ const StudentDashboard = ({ user, userProfile }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Ready to continue your learning journey?
-          </p>
+    <div className="dashboard-layout">
+      {/* Main Content */}
+      <div className="dashboard-main space-y-6">
+        {/* Welcome Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Ready to continue your learning journey?
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <QuickActionCard
-            icon={BookOpen}
-            title="Pre-Meeting Reflection"
-            subtitle="Prepare for your next meeting"
-            onClick={() => openReflectionForm('pre-meeting')}
-            isPrimary={true}
-          />
-          <QuickActionCard
-            icon={BookOpen}
-            title="Post-Meeting Summary"
-            subtitle="Document insights and action items"
-            onClick={() => openReflectionForm('post-meeting')}
-          />
-          <QuickActionCard
-            icon={Target}
-            title="Manage Goals"
-            subtitle="Track progress and set new goals"
-            onClick={() => setShowGoalTracker(true)}
-          />
-          <QuickActionCard
-            icon={Calendar}
-            title="Schedule Meeting"
-            subtitle="Book time with your advisor"
-            onClick={() => setShowCalendlyEmbed(true)}
-          />
+        {/* Quick Actions */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <QuickActionCard
+              icon={BookOpen}
+              title="Pre-Meeting Reflection"
+              subtitle="Prepare for your next meeting"
+              onClick={() => openReflectionForm('pre-meeting')}
+              isPrimary={true}
+            />
+            <QuickActionCard
+              icon={BookOpen}
+              title="Post-Meeting Summary"
+              subtitle="Document insights and action items"
+              onClick={() => openReflectionForm('post-meeting')}
+            />
+            <QuickActionCard
+              icon={Target}
+              title="Manage Goals"
+              subtitle="Track progress and set new goals"
+              onClick={() => setShowGoalTracker(true)}
+            />
+            <QuickActionCard
+              icon={Calendar}
+              title="Schedule Meeting"
+              subtitle="Book time with your advisor"
+              onClick={() => setShowCalendlyEmbed(true)}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Main Dashboard Grid */}
-      <div className="grid grid-2">
-        {/* Current Goals */}
+        {/* Goals Section with Filter */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-blue-600" />
-              <h2 className="card-title">Current Goals</h2>
+              <h2 className="card-title">Goals</h2>
             </div>
             <button 
               onClick={() => setShowGoalTracker(true)}
@@ -381,6 +448,22 @@ const StudentDashboard = ({ user, userProfile }) => {
               Add Goal
             </button>
           </div>
+          
+          {/* Goal Filter */}
+          <div className="mb-6">
+            <SegmentedControl
+              options={[
+                { label: 'All Goals', value: 'all', count: getGoalCounts().all },
+                { label: 'Active', value: 'active', count: getGoalCounts().active },
+                { label: 'Completed', value: 'completed', count: getGoalCounts().completed },
+                { label: 'Overdue', value: 'overdue', count: getGoalCounts().overdue },
+                { label: 'Not Started', value: 'not_started', count: getGoalCounts().not_started }
+              ]}
+              value={goalFilter}
+              onChange={setGoalFilter}
+            />
+          </div>
+
           <div className="space-y-3">
             {getRelevantGoals().length > 0 ? (
               <>
@@ -403,63 +486,14 @@ const StudentDashboard = ({ user, userProfile }) => {
             ) : (
               <div className="p-6 bg-gray-50 rounded-lg text-center">
                 <Target className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 mb-3">No active goals set yet</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  {goalFilter === 'all' ? 'No goals set yet' : `No ${goalFilter.replace('_', ' ')} goals`}
+                </p>
                 <button
                   onClick={() => setShowGoalTracker(true)}
                   className="btn btn-primary btn-sm"
                 >
-                  Set Your First Goal
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Upcoming Meetings */}
-        <div className="card">
-          <div className="card-header">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-green-600" />
-              <h2 className="card-title">Upcoming Meetings</h2>
-            </div>
-            <button 
-              onClick={() => setShowCalendlyEmbed(true)}
-              className="btn btn-sm btn-secondary"
-            >
-              <Plus className="w-4 h-4" />
-              Book Meeting
-            </button>
-          </div>
-          <div className="space-y-3">
-            {getUpcomingMeetings().length > 0 ? (
-              getUpcomingMeetings().map((meeting, index) => (
-                <div key={meeting.id || index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {meeting.title || 'Independent Study Meeting'}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {formatDate(meeting.scheduledDate)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => openReflectionForm('pre-meeting', null, meeting.id)}
-                      className="btn btn-sm btn-primary"
-                    >
-                      Prepare
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">No meetings scheduled</p>
-                <button 
-                  onClick={() => setShowCalendlyEmbed(true)}
-                  className="btn btn-primary btn-sm mt-2"
-                >
-                  Book a Meeting
+                  {goalFilter === 'all' ? 'Set Your First Goal' : 'Create Goal'}
                 </button>
               </div>
             )}
@@ -514,6 +548,60 @@ const StudentDashboard = ({ user, userProfile }) => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Sidebar */}
+      <div className="dashboard-sidebar space-y-6">
+        {/* Upcoming Meetings */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-green-600" />
+              <h2 className="card-title">Meetings</h2>
+            </div>
+            <button 
+              onClick={() => setShowCalendlyEmbed(true)}
+              className="btn btn-sm btn-secondary"
+            >
+              <Plus className="w-4 h-4" />
+              Book
+            </button>
+          </div>
+          <div className="space-y-3">
+            {getUpcomingMeetings().length > 0 ? (
+              getUpcomingMeetings().map((meeting, index) => (
+                <div key={meeting.id || index} className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900">
+                        {meeting.title || 'Independent Study Meeting'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {formatDate(meeting.scheduledDate)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => openReflectionForm('pre-meeting', null, meeting.id)}
+                      className="btn btn-sm btn-primary"
+                    >
+                      Prepare
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <p className="text-sm text-gray-600 mb-2">No meetings scheduled</p>
+                <button 
+                  onClick={() => setShowCalendlyEmbed(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  Book a Meeting
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Important Dates */}
         <div className="card">
@@ -548,10 +636,41 @@ const StudentDashboard = ({ user, userProfile }) => {
             )}
           </div>
         </div>
+
+        {/* Mini Stats Summary */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Progress Summary</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Goals</span>
+              <span className="font-medium text-gray-900">{goals.length}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Active Goals</span>
+              <span className="font-medium text-green-600">{getGoalCounts().active}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Completed Goals</span>
+              <span className="font-medium text-blue-600">{getGoalCounts().completed}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Reflections</span>
+              <span className="font-medium text-purple-600">{reflections.length}</span>
+            </div>
+            {getGoalCounts().overdue > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Overdue</span>
+                <span className="font-medium text-red-600">{getGoalCounts().overdue}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Help Section */}
-      <div className="text-sm text-gray-500 text-center">
+      <div className="col-span-full text-sm text-gray-500 text-center mt-8">
         Having issues? Contact your coordinator at {process.env.REACT_APP_ADMIN_EMAIL}
       </div>
 
