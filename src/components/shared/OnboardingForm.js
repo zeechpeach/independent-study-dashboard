@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { User, GraduationCap } from 'lucide-react';
-import { saveUserOnboarding, getAdvisorsByPathway } from '../../services/firebase';
+import { saveUserOnboarding, getAdvisorsByPathwaysWithOverlap, setAdvisorPathways } from '../../services/firebase';
 
 const OnboardingForm = ({ user, onComplete }) => {
   const [step, setStep] = useState(1);
   const [userType, setUserType] = useState('');
   const [formData, setFormData] = useState({
     pathway: '',
+    pathways: [], // For multi-pathway selection for advisors
     advisor: '',
     projectDescription: '',
     schedulingTool: ''
@@ -22,12 +23,13 @@ const OnboardingForm = ({ user, onComplete }) => {
     'Arts & Humanities'
   ];
 
-  // Fetch advisors when pathway is selected
+  // Fetch advisors when pathway is selected (for students)
   useEffect(() => {
     const fetchAdvisors = async () => {
       if (formData.pathway && userType === 'student') {
         try {
-          const pathwayAdvisors = await getAdvisorsByPathway(formData.pathway);
+          // Use new ANY overlap logic for advisor selection
+          const pathwayAdvisors = await getAdvisorsByPathwaysWithOverlap([formData.pathway]);
           setAdvisors(pathwayAdvisors);
         } catch (error) {
           console.error('Error fetching advisors:', error);
@@ -51,9 +53,15 @@ const OnboardingForm = ({ user, onComplete }) => {
       setError('Please select your role');
       return;
     }
-    if (step === 2 && !formData.pathway) {
-      setError('Please select your pathway');
-      return;
+    if (step === 2) {
+      if (userType === 'student' && !formData.pathway) {
+        setError('Please select your pathway');
+        return;
+      }
+      if (userType === 'advisor' && formData.pathways.length === 0) {
+        setError('Please select at least one pathway');
+        return;
+      }
     }
     if (step === 3) {
       if (userType === 'student' && !formData.advisor) {
@@ -77,7 +85,8 @@ const OnboardingForm = ({ user, onComplete }) => {
     try {
       const onboardingData = {
         userType,
-        pathway: formData.pathway,
+        // For students, save single pathway; for advisors, save first pathway for legacy compatibility
+        pathway: userType === 'student' ? formData.pathway : (formData.pathways[0] || ''),
         ...(userType === 'student' ? {
           advisor: formData.advisor,
           projectDescription: formData.projectDescription
@@ -89,6 +98,12 @@ const OnboardingForm = ({ user, onComplete }) => {
       };
       
       await saveUserOnboarding(user.uid, onboardingData);
+      
+      // For advisors, also save multi-pathway data in join table
+      if (userType === 'advisor' && formData.pathways.length > 0) {
+        await setAdvisorPathways(user.uid, formData.pathways);
+      }
+      
       onComplete();
     } catch (error) {
       setError('Failed to save onboarding information. Please try again.');
@@ -204,21 +219,49 @@ const OnboardingForm = ({ user, onComplete }) => {
 
           {step === 2 && (
             <div>
-              <h2 className="text-base font-semibold mb-3">Select pathway</h2>
-              <div className="form-group">
-                <select
-                  value={formData.pathway}
-                  onChange={(e) => handleInputChange('pathway', e.target.value)}
-                  className="form-select text-sm"
-                >
-                  <option value="">Choose a pathway...</option>
+              <h2 className="text-base font-semibold mb-3">
+                Select {userType === 'advisor' ? 'pathways' : 'pathway'}
+              </h2>
+              
+              {userType === 'student' ? (
+                <div className="form-group">
+                  <select
+                    value={formData.pathway}
+                    onChange={(e) => handleInputChange('pathway', e.target.value)}
+                    className="form-select text-sm"
+                  >
+                    <option value="">Choose a pathway...</option>
+                    {pathways.map((pathway) => (
+                      <option key={pathway} value={pathway}>
+                        {pathway}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                // Multi-pathway selection for advisors
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600 mb-3">
+                    Select all pathways you can advise (you can change this later)
+                  </p>
                   {pathways.map((pathway) => (
-                    <option key={pathway} value={pathway}>
-                      {pathway}
-                    </option>
+                    <label key={pathway} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.pathways.includes(pathway)}
+                        onChange={(e) => {
+                          const newPathways = e.target.checked
+                            ? [...formData.pathways, pathway]
+                            : formData.pathways.filter(p => p !== pathway);
+                          handleInputChange('pathways', newPathways);
+                        }}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm">{pathway}</span>
+                    </label>
                   ))}
-                </select>
-              </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -228,24 +271,67 @@ const OnboardingForm = ({ user, onComplete }) => {
               
               <div className="form-group">
                 <label className="form-label required text-xs">Choose advisor</label>
-                <select
-                  value={formData.advisor}
-                  onChange={(e) => handleInputChange('advisor', e.target.value)}
-                  className="form-select text-sm"
-                  disabled={advisors.length === 0}
-                >
-                  <option value="">
-                    {advisors.length === 0 ? 'Loading...' : 'Select advisor...'}
-                  </option>
-                  {advisors.map((advisor) => (
-                    <option key={advisor.id} value={advisor.name}>
-                      {advisor.name}
-                    </option>
-                  ))}
-                </select>
-                {advisors.length === 0 && formData.pathway && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    No advisors found. Contact zchien@bwscampus.com
+                {advisors.length === 0 && formData.pathway ? (
+                  <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="text-sm text-gray-600 text-center">
+                      No advisors found. Contact zchien@bwscampus.com
+                    </div>
+                  </div>
+                ) : advisors.length === 0 ? (
+                  <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="text-sm text-gray-600 text-center">
+                      Loading advisors...
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {advisors.map((advisor) => (
+                      <div
+                        key={advisor.id}
+                        onClick={() => handleInputChange('advisor', advisor.name)}
+                        className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                          formData.advisor === advisor.name
+                            ? 'border-green-600 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium text-sm">{advisor.name}</h3>
+                              {advisor.overlapCount > 0 && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  {advisor.overlapCount} match{advisor.overlapCount > 1 ? 'es' : ''}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {advisor.pathways?.map((pathway) => (
+                                <span
+                                  key={pathway}
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    pathway === formData.pathway
+                                      ? 'bg-green-100 text-green-800 border border-green-200'
+                                      : 'bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  {pathway}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 ${
+                            formData.advisor === advisor.name
+                              ? 'border-green-600 bg-green-600'
+                              : 'border-gray-300'
+                          }`}>
+                            {formData.advisor === advisor.name && (
+                              <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

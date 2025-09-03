@@ -20,7 +20,7 @@ import {
   updateGoal,
   deleteGoal,
   getUserMeetings,
-  getAllImportantDates,
+  getUpcomingImportantDatesForAdvisors,
   getAdvisorByName
 } from '../../services/firebase';
 
@@ -48,23 +48,35 @@ const StudentDashboard = ({ user, userProfile }) => {
     
     try {
       setLoading(true);
-      const [userReflections, userGoals, userMeetings, dates] = await Promise.all([
+      const [userReflections, userGoals, userMeetings] = await Promise.all([
         getUserReflections(user.uid),
         getUserGoals(user.uid),
-        getUserMeetings(user.uid),
-        getAllImportantDates()
+        getUserMeetings(user.uid)
       ]);
 
       setReflections(userReflections);
       setGoals(userGoals);
       setMeetings(userMeetings);
-      setImportantDates(dates);
+      
+      // Fetch important dates from assigned advisors
+      if (userProfile?.advisor) {
+        try {
+          const advisorNames = [userProfile.advisor]; // Support for multi-advisor in the future
+          const dates = await getUpcomingImportantDatesForAdvisors(advisorNames);
+          setImportantDates(dates);
+        } catch (error) {
+          console.error('Error fetching advisor important dates:', error);
+          setImportantDates([]);
+        }
+      } else {
+        setImportantDates([]);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.uid]);
+  }, [user?.uid, userProfile?.advisor]);
 
   useEffect(() => {
     fetchUserData();

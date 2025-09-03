@@ -633,3 +633,348 @@ export const getStudentsNeedingAttention = async (advisorName) => {
     throw error;
   }
 };
+
+// ============================================================================
+// Multi-Pathway Support Functions (Phase 2.1)
+// ============================================================================
+
+/**
+ * Add a pathway to an advisor's pathway list
+ * @param {string} advisorId - The advisor's user ID
+ * @param {string} pathway - The pathway to add
+ * @returns {Promise<void>}
+ */
+export const addAdvisorPathway = async (advisorId, pathway) => {
+  try {
+    await addDoc(collection(db, 'advisor_pathways'), {
+      advisor_id: advisorId,
+      pathway: pathway,
+      created_at: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error adding advisor pathway:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a pathway from an advisor's pathway list
+ * @param {string} advisorId - The advisor's user ID
+ * @param {string} pathway - The pathway to remove
+ * @returns {Promise<void>}
+ */
+export const removeAdvisorPathway = async (advisorId, pathway) => {
+  try {
+    const q = query(
+      collection(db, 'advisor_pathways'),
+      where('advisor_id', '==', advisorId),
+      where('pathway', '==', pathway)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    // Delete all matching documents (should be only one due to unique constraint)
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error('Error removing advisor pathway:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all pathways for a specific advisor
+ * @param {string} advisorId - The advisor's user ID
+ * @returns {Promise<Array<string>>} Array of pathway names
+ */
+export const getAdvisorPathways = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'advisor_pathways'),
+      where('advisor_id', '==', advisorId)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => doc.data().pathway);
+  } catch (error) {
+    console.error('Error getting advisor pathways:', error);
+    throw error;
+  }
+};
+
+/**
+ * Set all pathways for an advisor (replaces existing pathways)
+ * @param {string} advisorId - The advisor's user ID
+ * @param {Array<string>} pathways - Array of pathway names
+ * @returns {Promise<void>}
+ */
+export const setAdvisorPathways = async (advisorId, pathways) => {
+  try {
+    // First remove all existing pathways
+    const existingPathways = await getAdvisorPathways(advisorId);
+    const removePromises = existingPathways.map(pathway => 
+      removeAdvisorPathway(advisorId, pathway)
+    );
+    await Promise.all(removePromises);
+    
+    // Then add all new pathways
+    const addPromises = pathways.map(pathway => 
+      addAdvisorPathway(advisorId, pathway)
+    );
+    await Promise.all(addPromises);
+  } catch (error) {
+    console.error('Error setting advisor pathways:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get advisors by pathways with ANY overlap logic
+ * @param {Array<string>} studentPathways - Array of student's pathways
+ * @returns {Promise<Array>} Array of advisors with overlap count and pathway info
+ */
+export const getAdvisorsByPathwaysWithOverlap = async (studentPathways) => {
+  try {
+    if (!studentPathways || studentPathways.length === 0) {
+      return [];
+    }
+
+    // Get all advisor-pathway relationships
+    const q = query(
+      collection(db, 'advisor_pathways'),
+      where('pathway', 'in', studentPathways)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    // Group by advisor ID and count overlaps
+    const advisorOverlaps = {};
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const advisorId = data.advisor_id;
+      
+      if (!advisorOverlaps[advisorId]) {
+        advisorOverlaps[advisorId] = {
+          pathways: [],
+          overlapCount: 0
+        };
+      }
+      
+      advisorOverlaps[advisorId].pathways.push(data.pathway);
+      advisorOverlaps[advisorId].overlapCount++;
+    });
+
+    // Get advisor details for all matching advisors
+    const advisorIds = Object.keys(advisorOverlaps);
+    if (advisorIds.length === 0) {
+      return [];
+    }
+
+    const advisorPromises = advisorIds.map(advisorId => getUserProfile(advisorId));
+    const advisorProfiles = await Promise.all(advisorPromises);
+    
+    // Filter out non-advisor users and combine with overlap data
+    const advisorsWithOverlap = advisorProfiles
+      .filter(advisor => advisor && advisor.userType === 'advisor' && advisor.isAdmin === true)
+      .map(advisor => ({
+        ...advisor,
+        pathways: advisorOverlaps[advisor.id].pathways,
+        overlapCount: advisorOverlaps[advisor.id].overlapCount
+      }))
+      .sort((a, b) => b.overlapCount - a.overlapCount); // Sort by overlap count descending
+
+    return advisorsWithOverlap;
+  } catch (error) {
+    console.error('Error getting advisors by pathways with overlap:', error);
+    throw error;
+  }
+};
+
+/**
+ * Migrate existing single pathway data to multi-pathway join table
+ * @returns {Promise<{migrated: number, skipped: number}>} Migration results
+ */
+export const migrateAdvisorPathwaysData = async () => {
+  try {
+    const results = { migrated: 0, skipped: 0 };
+    
+    // Get all advisor users with a pathway
+    const q = query(
+      collection(db, 'users'),
+      where('userType', '==', 'advisor')
+    );
+    const querySnapshot = await getDocs(q);
+    
+    for (const doc of querySnapshot.docs) {
+      const advisor = doc.data();
+      const advisorId = doc.id;
+      
+      // Skip if no pathway or pathway is empty
+      if (!advisor.pathway || advisor.pathway.trim() === '') {
+        results.skipped++;
+        continue;
+      }
+      
+      // Check if already migrated
+      const existing = await getAdvisorPathways(advisorId);
+      if (existing.length > 0) {
+        results.skipped++;
+        continue;
+      }
+      
+      // Migrate the single pathway
+      await addAdvisorPathway(advisorId, advisor.pathway);
+      results.migrated++;
+    }
+    
+    return results;
+  } catch (error) {
+    console.error('Error migrating advisor pathways data:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// Important Dates Functions (Phase 2.1)
+// ============================================================================
+
+/**
+ * Create a new important date for an advisor
+ * @param {string} advisorId - The advisor's user ID
+ * @param {Object} dateData - Date information {title, description, date}
+ * @returns {Promise<string>} Document ID of created date
+ */
+export const createAdvisorImportantDate = async (advisorId, dateData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'advisor_important_dates'), {
+      advisor_id: advisorId,
+      title: dateData.title,
+      description: dateData.description || null,
+      date: dateData.date, // Should be date-only string (YYYY-MM-DD)
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating advisor important date:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing important date
+ * @param {string} dateId - The date document ID
+ * @param {Object} updates - Fields to update
+ * @returns {Promise<void>}
+ */
+export const updateAdvisorImportantDate = async (dateId, updates) => {
+  try {
+    await updateDoc(doc(db, 'advisor_important_dates', dateId), {
+      ...updates,
+      updated_at: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating advisor important date:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete an important date
+ * @param {string} dateId - The date document ID
+ * @returns {Promise<void>}
+ */
+export const deleteAdvisorImportantDate = async (dateId) => {
+  try {
+    await deleteDoc(doc(db, 'advisor_important_dates', dateId));
+  } catch (error) {
+    console.error('Error deleting advisor important date:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all important dates for a specific advisor
+ * @param {string} advisorId - The advisor's user ID
+ * @returns {Promise<Array>} Array of important dates
+ */
+export const getAdvisorImportantDates = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'advisor_important_dates'),
+      where('advisor_id', '==', advisorId),
+      orderBy('date', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisor important dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get upcoming important dates for multiple advisors (for student dashboard)
+ * @param {Array<string>} advisorNames - Array of advisor names
+ * @returns {Promise<Array>} Array of upcoming important dates with advisor info
+ */
+export const getUpcomingImportantDatesForAdvisors = async (advisorNames) => {
+  try {
+    if (!advisorNames || advisorNames.length === 0) {
+      return [];
+    }
+
+    // Get advisor IDs from names
+    const advisorProfiles = await Promise.all(
+      advisorNames.map(name => getAdvisorByName(name))
+    );
+    
+    const advisorIds = advisorProfiles
+      .filter(advisor => advisor !== null)
+      .map(advisor => advisor.id);
+    
+    if (advisorIds.length === 0) {
+      return [];
+    }
+
+    // Get important dates for all advisors
+    const datePromises = advisorIds.map(advisorId => getAdvisorImportantDates(advisorId));
+    const allDatesArrays = await Promise.all(datePromises);
+    const allDates = allDatesArrays.flat();
+
+    // Filter for upcoming dates only
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const upcomingDates = allDates.filter(date => date.date >= today);
+
+    // Add advisor info and remove duplicates
+    const datesWithAdvisorInfo = upcomingDates.map(date => {
+      const advisor = advisorProfiles.find(a => a && a.id === date.advisor_id);
+      return {
+        ...date,
+        advisorName: advisor?.name || 'Unknown Advisor'
+      };
+    });
+
+    // Sort by date ascending and remove exact duplicates
+    const uniqueDates = datesWithAdvisorInfo.reduce((acc, current) => {
+      const isDuplicate = acc.some(date => 
+        date.title === current.title && 
+        date.date === current.date &&
+        date.description === current.description
+      );
+      
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      
+      return acc;
+    }, []);
+
+    uniqueDates.sort((a, b) => a.date.localeCompare(b.date));
+    
+    return uniqueDates;
+  } catch (error) {
+    console.error('Error getting upcoming important dates for advisors:', error);
+    throw error;
+  }
+};
