@@ -6,6 +6,8 @@ import { LogOut } from 'lucide-react';
  * 
  * Provides consistent header, navigation, and main content layout
  * using Tailwind CSS utilities. Replaces legacy header and layout classes.
+ * 
+ * Supports role-based display and navigation for student, advisor, and admin views.
  */
 const AppShell = ({ 
   children, 
@@ -14,7 +16,8 @@ const AppShell = ({
   isAdmin, 
   onLogout, 
   onToggleAdminView,
-  showAdminDashboard 
+  showAdminDashboard,
+  role = 'student' // Default role if not provided
 }) => {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,13 +51,13 @@ const AppShell = ({
                   )}
                 </div>
                 
-                {/* Admin toggle button */}
+                {/* Role toggle button - supports admin/advisor switching */}
                 {isAdmin && onToggleAdminView && (
                   <button
                     onClick={onToggleAdminView}
                     className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                   >
-                    {showAdminDashboard ? 'Student View' : 'Admin View'}
+                    {showAdminDashboard ? 'Student View' : (role === 'advisor' ? 'Advisor View' : 'Admin View')}
                   </button>
                 )}
                 

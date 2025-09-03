@@ -108,6 +108,55 @@ The migration follows a **utility-first approach** with careful preservation of 
 - Performance maintained or improved ✅
 - Visual parity with current design ✅
 
+## Phase 3A: Advisor Structural Migration (✅ **COMPLETED**)
+**Current Phase** - Introduce advisor-specific layout structure without changing business logic
+
+### Completed
+- ✅ Created feature flag system (`featureFlags.ts`) with `advisorLayoutV2` flag (default: true)
+- ✅ Added role-based type system (`roles.ts`) with UserRole union: 'student' | 'advisor' | 'sysadmin'
+- ✅ Implemented advisor navigation configuration (`roleNav.ts`) with `advisorNavItems` array
+- ✅ Generalized AppShell component to support `role="advisor"` prop
+- ✅ Created AdvisorAppShell wrapper component for advisor-specific functionality
+- ✅ Built AdvisorDashboardGrid component extending base DashboardGrid
+- ✅ Added placeholder panels: NeedsAttentionPanel and RecentReflectionsPanel (static stub content)
+- ✅ Implemented new /advisor dashboard page using new layout components
+- ✅ Preserved legacy admin dashboard as fallback behind feature flag
+- ✅ Renamed "Admin" references to "Advisor" in new/modified components
+
+### Technical Implementation
+- **Feature Flag Control**: `featureFlags.advisorLayoutV2` determines whether to use new advisor layout vs legacy admin layout
+- **Role-Based Architecture**: New role system supports student, advisor, and sysadmin (reserved) roles
+- **Layout Components**: 
+  - `AdvisorAppShell`: Advisor-specific wrapper around base AppShell
+  - `AdvisorDashboardGrid`: Specialized grid layout for advisor workflows
+  - `NeedsAttentionPanel`: Static placeholder showing students requiring attention
+  - `RecentReflectionsPanel`: Static placeholder for recent student reflections
+- **Navigation Structure**: Advisor-specific navigation items focused on student oversight and mentoring
+- **Backward Compatibility**: Legacy admin dashboard remains accessible when feature flag is disabled
+
+### Included in This Phase
+- Configuration files for feature flags, roles, and navigation
+- Advisor-specific layout components and wrappers
+- Placeholder panels with static content for structural validation
+- New advisor dashboard page with grid-based layout
+- Feature flag integration for gradual rollout
+
+### Excluded from This Phase
+- Dynamic data integration (panels show static placeholder content only)
+- Full navigation implementation (structural foundation only)
+- Role-based permission enforcement (configuration established, enforcement reserved for future phases)
+- Advanced advisor-specific functionality (focus on structural migration only)
+
+### Rollback Strategy
+- Set `featureFlags.advisorLayoutV2` to `false` to revert to legacy admin dashboard
+- All new components are isolated and can be removed without affecting existing functionality
+- Base AppShell maintains backward compatibility with existing admin/student toggle behavior
+
+### Next Phases
+- **Phase 3B**: Implement dynamic data integration for advisor panels
+- **Phase 3C**: Add role-based navigation and permission enforcement
+- **Phase 3D**: Enhance advisor-specific features and interactions
+
 ## Phase 3: Interactive Controls & Content Cards (🔄 **PLANNED**)
 **Target Phase** - Migrate segmented controls and dynamic content
 
