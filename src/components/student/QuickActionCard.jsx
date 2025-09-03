@@ -52,5 +52,3 @@ const QuickActionCard = ({
 };
 
 export default QuickActionCard;
-
-export default QuickActionCard;

@@ -187,7 +187,7 @@ function App() {
   // Ultra-simple login page
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
-      <div className="w-full max-w-sm text-center">
+      <div className="w-full max-w-md text-center">
 
         {/* Title */}
         <h1 className="text-3xl font-semibold text-gray-900 mb-12">
@@ -202,11 +202,11 @@ function App() {
         )}
 
         {/* Single Sign In Button */}
-        <div className="flex flex-col gap-4 items-center mb-12">
+        <div className="flex flex-col gap-6 items-center mb-12">
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="btn btn-primary btn-lg px-8 py-4"
+            className="btn btn-primary btn-lg px-8 py-4 w-full max-w-xs"
           >
             {loading ? (
               <div className="loading-spinner" />
@@ -239,12 +239,24 @@ function App() {
             <span className="text-gray-400 text-sm">or</span>
           </div>
           
-          <button
-            onClick={() => setShowUIDemo(true)}
-            className="btn btn-outline px-8 py-3"
-          >
-            View Phase 2 UI Demo
-          </button>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button
+              onClick={() => setShowUIDemo(true)}
+              className="btn btn-outline px-8 py-3 w-full"
+            >
+              View Phase 2 UI Demo
+            </button>
+            
+            <button
+              onClick={() => {
+                setUser({ uid: 'demo', displayName: 'Demo Student', email: 'demo@example.com' });
+                setUserProfile({ onboardingComplete: true, userType: 'student' });
+              }}
+              className="btn btn-secondary px-8 py-3 w-full"
+            >
+              View Dashboard Demo
+            </button>
+          </div>
         </div>
 
         {/* Help */}
