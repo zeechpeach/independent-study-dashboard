@@ -296,10 +296,11 @@ export const getUserMeetings = async (userId) => {
 };
 
 // Important dates functions
-export const createImportantDate = async (dateData) => {
+export const createImportantDate = async (dateData, advisorId = null) => {
   try {
     const docRef = await addDoc(collection(db, 'importantDates'), {
       ...dateData,
+      advisorId: advisorId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -344,6 +345,94 @@ export const getAllImportantDates = async () => {
     }));
   } catch (error) {
     console.error('Error getting important dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all important dates for a specific advisor
+ * @param {string} advisorId - The advisor's user ID
+ * @returns {Promise<Array>} Array of important dates
+ */
+export const getAdvisorImportantDates = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'importantDates'),
+      where('advisorId', '==', advisorId),
+      orderBy('date', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisor important dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get important dates for multiple advisors with batching and global dates
+ * @param {Array<string>} advisorIds - Array of advisor IDs
+ * @returns {Promise<Array>} Array of important dates (advisor-specific + global)
+ */
+export const getImportantDatesForAdvisors = async (advisorIds) => {
+  try {
+    if (!advisorIds || advisorIds.length === 0) {
+      // Return only global dates if no advisors specified
+      const q = query(
+        collection(db, 'importantDates'),
+        where('advisorId', '==', null),
+        orderBy('date', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+
+    const allDates = new Map(); // Use Map to handle duplicates by ID
+    
+    // Always get global dates (advisorId === null)
+    const globalQuery = query(
+      collection(db, 'importantDates'),
+      where('advisorId', '==', null),
+      orderBy('date', 'asc')
+    );
+    const globalSnapshot = await getDocs(globalQuery);
+    globalSnapshot.docs.forEach(doc => {
+      allDates.set(doc.id, { id: doc.id, ...doc.data() });
+    });
+
+    // Batch advisor queries due to Firestore 'in' limit of 10
+    const batchSize = 10;
+    for (let i = 0; i < advisorIds.length; i += batchSize) {
+      const batch = advisorIds.slice(i, i + batchSize);
+      
+      const q = query(
+        collection(db, 'importantDates'),
+        where('advisorId', 'in', batch),
+        orderBy('date', 'asc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      querySnapshot.docs.forEach(doc => {
+        allDates.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    }
+
+    // Convert Map values to array and sort by date
+    const sortedDates = Array.from(allDates.values()).sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return 0;
+    });
+
+    return sortedDates;
+  } catch (error) {
+    console.error('Error getting important dates for advisors:', error);
     throw error;
   }
 };
@@ -827,154 +916,6 @@ export const migrateAdvisorPathwaysData = async () => {
     return results;
   } catch (error) {
     console.error('Error migrating advisor pathways data:', error);
-    throw error;
-  }
-};
-
-// ============================================================================
-// Important Dates Functions (Phase 2.1)
-// ============================================================================
-
-/**
- * Create a new important date for an advisor
- * @param {string} advisorId - The advisor's user ID
- * @param {Object} dateData - Date information {title, description, date}
- * @returns {Promise<string>} Document ID of created date
- */
-export const createAdvisorImportantDate = async (advisorId, dateData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'advisor_important_dates'), {
-      advisor_id: advisorId,
-      title: dateData.title,
-      description: dateData.description || null,
-      date: dateData.date, // Should be date-only string (YYYY-MM-DD)
-      created_at: serverTimestamp(),
-      updated_at: serverTimestamp()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating advisor important date:', error);
-    throw error;
-  }
-};
-
-/**
- * Update an existing important date
- * @param {string} dateId - The date document ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<void>}
- */
-export const updateAdvisorImportantDate = async (dateId, updates) => {
-  try {
-    await updateDoc(doc(db, 'advisor_important_dates', dateId), {
-      ...updates,
-      updated_at: serverTimestamp()
-    });
-  } catch (error) {
-    console.error('Error updating advisor important date:', error);
-    throw error;
-  }
-};
-
-/**
- * Delete an important date
- * @param {string} dateId - The date document ID
- * @returns {Promise<void>}
- */
-export const deleteAdvisorImportantDate = async (dateId) => {
-  try {
-    await deleteDoc(doc(db, 'advisor_important_dates', dateId));
-  } catch (error) {
-    console.error('Error deleting advisor important date:', error);
-    throw error;
-  }
-};
-
-/**
- * Get all important dates for a specific advisor
- * @param {string} advisorId - The advisor's user ID
- * @returns {Promise<Array>} Array of important dates
- */
-export const getAdvisorImportantDates = async (advisorId) => {
-  try {
-    const q = query(
-      collection(db, 'advisor_important_dates'),
-      where('advisor_id', '==', advisorId),
-      orderBy('date', 'asc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error('Error getting advisor important dates:', error);
-    throw error;
-  }
-};
-
-/**
- * Get upcoming important dates for multiple advisors (for student dashboard)
- * @param {Array<string>} advisorNames - Array of advisor names
- * @returns {Promise<Array>} Array of upcoming important dates with advisor info
- */
-export const getUpcomingImportantDatesForAdvisors = async (advisorNames) => {
-  try {
-    if (!advisorNames || advisorNames.length === 0) {
-      return [];
-    }
-
-    // Get advisor IDs from names
-    const advisorProfiles = await Promise.all(
-      advisorNames.map(name => getAdvisorByName(name))
-    );
-    
-    const advisorIds = advisorProfiles
-      .filter(advisor => advisor !== null)
-      .map(advisor => advisor.id);
-    
-    if (advisorIds.length === 0) {
-      return [];
-    }
-
-    // Get important dates for all advisors
-    const datePromises = advisorIds.map(advisorId => getAdvisorImportantDates(advisorId));
-    const allDatesArrays = await Promise.all(datePromises);
-    const allDates = allDatesArrays.flat();
-
-    // Filter for upcoming dates only
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const upcomingDates = allDates.filter(date => date.date >= today);
-
-    // Add advisor info and remove duplicates
-    const datesWithAdvisorInfo = upcomingDates.map(date => {
-      const advisor = advisorProfiles.find(a => a && a.id === date.advisor_id);
-      return {
-        ...date,
-        advisorName: advisor?.name || 'Unknown Advisor'
-      };
-    });
-
-    // Sort by date ascending and remove exact duplicates
-    const uniqueDates = datesWithAdvisorInfo.reduce((acc, current) => {
-      const isDuplicate = acc.some(date => 
-        date.title === current.title && 
-        date.date === current.date &&
-        date.description === current.description
-      );
-      
-      if (!isDuplicate) {
-        acc.push(current);
-      }
-      
-      return acc;
-    }, []);
-
-    uniqueDates.sort((a, b) => a.date.localeCompare(b.date));
-    
-    return uniqueDates;
-  } catch (error) {
-    console.error('Error getting upcoming important dates for advisors:', error);
     throw error;
   }
 };

@@ -20,7 +20,7 @@ import {
   updateGoal,
   deleteGoal,
   getUserMeetings,
-  getUpcomingImportantDatesForAdvisors,
+  getImportantDatesForAdvisors,
   getAdvisorByName
 } from '../../services/firebase';
 
@@ -61,9 +61,16 @@ const StudentDashboard = ({ user, userProfile }) => {
       // Fetch important dates from assigned advisors
       if (userProfile?.advisor) {
         try {
-          const advisorNames = [userProfile.advisor]; // Support for multi-advisor in the future
-          const dates = await getUpcomingImportantDatesForAdvisors(advisorNames);
-          setImportantDates(dates);
+          // Get advisor ID from name  
+          const advisor = await getAdvisorByName(userProfile.advisor);
+          const advisorIds = advisor ? [advisor.id] : [];
+          
+          // Get important dates for advisor + global dates, filter for upcoming
+          const allDates = await getImportantDatesForAdvisors(advisorIds);
+          const today = new Date().toISOString().split('T')[0];
+          const upcomingDates = allDates.filter(date => date.date >= today);
+          
+          setImportantDates(upcomingDates);
         } catch (error) {
           console.error('Error fetching advisor important dates:', error);
           setImportantDates([]);

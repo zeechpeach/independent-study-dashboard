@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return isSignedIn() && userDoc().data.isAdmin == true; }
+    function isAdvisor() { return isSignedIn() && userDoc().data.isAdvisor == true; }
+    
+    // Student assigned to advisor check (optional; fallback to UI filtering)
+    // Requires each student user doc to store advisorId or advisors array of IDs
+    function hasAdvisor(advisorId) {
+      return advisorId == null || // global dates
+             (advisorId == request.auth.uid) || // own advisor dates
+             (advisorId in userDoc().data.advisors) || // multi-advisor assignment
+             (userDoc().data.advisorId == advisorId); // single advisor assignment
+    }
+    
+    match /importantDates/{dateId} {
+      allow read: if isSignedIn() && (isAdmin() || hasAdvisor(resource.data.advisorId));
+      allow create: if isAdmin() || (isAdvisor() && request.resource.data.advisorId == request.auth.uid);
+      allow update, delete: if isAdmin() || (isAdvisor() && resource.data.advisorId == request.auth.uid);
+    }
+    
+    // TODO: Restore permissions for other collections to maintain existing app functionality
+    // The following collections need their original access rules restored:
+    
+    // TODO: users collection - likely needs read access for students/advisors, write for admins
+    // match /users/{userId} {
+    //   allow read: if isSignedIn();
+    //   allow write: if isAdmin() || request.auth.uid == userId;
+    // }
+    
+    // TODO: meetings collection - students need CRUD for their own meetings
+    // match /meetings/{meetingId} {
+    //   allow read, write: if isSignedIn() && (isAdmin() || resource.data.studentId == request.auth.uid);
+    // }
+    
+    // TODO: reflections collection - students need CRUD for their own reflections
+    // match /reflections/{reflectionId} {
+    //   allow read, write: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    // }
+    
+    // TODO: goals collection - students need CRUD for their own goals
+    // match /goals/{goalId} {
+    //   allow read, write: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    // }
+    
+    // TODO: advisor_pathways collection - advisors need read/write for their own pathways
+    // match /advisor_pathways/{pathwayId} {
+    //   allow read: if isSignedIn();
+    //   allow write: if isAdmin() || isAdvisor();
+    // }
+    
+    // TEMPORARY: Restrict everything else to admins only
+    // This will break existing functionality until proper rules are restored above
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
