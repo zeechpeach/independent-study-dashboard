@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Plus, Edit3, Trash2, Calendar, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { GOAL_STATUS, isGoalOverdue, goalDisplayStatus, getStatusClasses } from '../../utils/goals';
 
 const GoalTracker = ({ 
   user, 
@@ -24,22 +25,15 @@ const GoalTracker = ({
   };
 
   const getGoalsByStatus = () => {
-    const now = new Date();
-    
     return goals.map(goal => {
-      const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
-      let status = goal.status || 'active';
+      const status = goal.status || GOAL_STATUS.ACTIVE;
+      const displayStatus = goalDisplayStatus(goal);
       
-      // Auto-determine status based on dates and completion
-      if (goal.progress >= 100 || status === 'completed') {
-        status = 'completed';
-      } else if (targetDate && targetDate < now && status !== 'completed') {
-        status = 'overdue';
-      } else if (status !== 'paused') {
-        status = 'active';
-      }
-      
-      return { ...goal, computedStatus: status };
+      return { 
+        ...goal, 
+        computedStatus: isGoalOverdue(goal) ? 'overdue' : status,
+        displayStatus
+      };
     });
   };
 
@@ -48,13 +42,13 @@ const GoalTracker = ({
     
     switch (filter) {
       case 'active':
-        return goalsWithStatus.filter(g => g.computedStatus === 'active');
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.ACTIVE);
       case 'completed':
-        return goalsWithStatus.filter(g => g.computedStatus === 'completed');
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.COMPLETED);
       case 'overdue':
         return goalsWithStatus.filter(g => g.computedStatus === 'overdue');
-      case 'paused':
-        return goalsWithStatus.filter(g => g.computedStatus === 'paused');
+      case 'not_started':
+        return goalsWithStatus.filter(g => g.computedStatus === GOAL_STATUS.NOT_STARTED);
       default:
         return goalsWithStatus;
     }
@@ -62,29 +56,19 @@ const GoalTracker = ({
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
+      case GOAL_STATUS.COMPLETED:
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'overdue':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case 'paused':
+      case GOAL_STATUS.NOT_STARTED:
         return <Clock className="w-4 h-4 text-gray-600" />;
+      case GOAL_STATUS.ACTIVE:
       default:
         return <Target className="w-4 h-4 text-blue-600" />;
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'status-success';
-      case 'overdue':
-        return 'status-danger';
-      case 'paused':
-        return 'text-gray-500';
-      default:
-        return 'status-info';
-    }
-  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No deadline';
@@ -98,10 +82,10 @@ const GoalTracker = ({
   const filteredGoals = getFilteredGoals();
   const goalCounts = {
     all: goals.length,
-    active: getGoalsByStatus().filter(g => g.computedStatus === 'active').length,
-    completed: getGoalsByStatus().filter(g => g.computedStatus === 'completed').length,
+    active: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.ACTIVE).length,
+    completed: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.COMPLETED).length,
     overdue: getGoalsByStatus().filter(g => g.computedStatus === 'overdue').length,
-    paused: getGoalsByStatus().filter(g => g.computedStatus === 'paused').length
+    not_started: getGoalsByStatus().filter(g => g.computedStatus === GOAL_STATUS.NOT_STARTED).length
   };
 
   if (showForm) {
@@ -151,7 +135,7 @@ const GoalTracker = ({
             { key: 'active', label: 'Active', count: goalCounts.active },
             { key: 'completed', label: 'Completed', count: goalCounts.completed },
             { key: 'overdue', label: 'Overdue', count: goalCounts.overdue },
-            { key: 'paused', label: 'Paused', count: goalCounts.paused }
+            { key: 'not_started', label: 'Not Started', count: goalCounts.not_started }
           ].map(tab => (
             <button
               key={tab.key}
@@ -202,9 +186,6 @@ const GoalTracker = ({
                     <h3 className="text-lg font-semibold text-gray-900">
                       {goal.title}
                     </h3>
-                    <span className={`status ${getStatusColor(goal.computedStatus)} text-xs`}>
-                      {goal.computedStatus}
-                    </span>
                   </div>
                   
                   {goal.description && (
@@ -223,18 +204,11 @@ const GoalTracker = ({
                     )}
                   </div>
                   
-                  {/* Progress Bar */}
+                  {/* Status Display */}
                   <div className="mb-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">Progress</span>
-                      <span className="text-sm text-gray-600">{goal.progress || 0}%</span>
-                    </div>
-                    <div className="progress">
-                      <div 
-                        className="progress-bar"
-                        style={{ width: `${goal.progress || 0}%` }}
-                      ></div>
-                    </div>
+                    <span className={getStatusClasses(goal.displayStatus.variant)}>
+                      {goal.displayStatus.label}
+                    </span>
                   </div>
                   
                   {goal.successMetrics && (
@@ -277,8 +251,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
     category: '',
     targetDate: '',
     successMetrics: '',
-    progress: 0,
-    status: 'active'
+    status: GOAL_STATUS.ACTIVE
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -291,8 +264,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
         category: goal.category || '',
         targetDate: goal.targetDate ? goal.targetDate.split('T')[0] : '',
         successMetrics: goal.successMetrics || '',
-        progress: goal.progress || 0,
-        status: goal.status || 'active'
+        status: goal.status || GOAL_STATUS.ACTIVE
       });
     }
   }, [goal]);
@@ -323,8 +295,7 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
     try {
       await onSave({
         ...formData,
-        targetDate: formData.targetDate ? new Date(formData.targetDate).toISOString() : null,
-        progress: parseInt(formData.progress) || 0
+        targetDate: formData.targetDate ? new Date(formData.targetDate).toISOString() : null
       });
     } catch (error) {
       console.error('Error saving goal:', error);
@@ -419,32 +390,15 @@ const GoalForm = ({ goal, onSave, onCancel }) => {
 
           <div className="grid grid-2">
             <div className="form-group">
-              <label className="form-label">Current Progress (%)</label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={formData.progress}
-                  onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
-                  className="flex-1"
-                />
-                <span className="text-lg font-semibold text-blue-600 w-12">
-                  {formData.progress}%
-                </span>
-              </div>
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Status</label>
               <select
                 className="form-select"
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
               >
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="completed">Completed</option>
+                <option value={GOAL_STATUS.NOT_STARTED}>Not Started</option>
+                <option value={GOAL_STATUS.ACTIVE}>Active</option>
+                <option value={GOAL_STATUS.COMPLETED}>Completed</option>
               </select>
             </div>
           </div>
