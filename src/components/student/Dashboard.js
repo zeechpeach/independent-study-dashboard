@@ -8,9 +8,11 @@ import ReflectionCard from './ReflectionCard';
 import ReflectionModal from './ReflectionModal';
 import QuickActionCard from './QuickActionCard';
 import GoalModal from './GoalModal';
+import MeetingsCard from './MeetingsCard';
 import SegmentedControl from '../ui/SegmentedControl';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
+import useMeetings from '../../hooks/useMeetings';
 import { 
   createReflection, 
   updateReflection, 
@@ -19,7 +21,6 @@ import {
   createGoal,
   updateGoal,
   deleteGoal,
-  getUserMeetings,
   getImportantDatesForAdvisors,
   getAdvisorByName
 } from '../../services/firebase';
@@ -27,7 +28,6 @@ import {
 const StudentDashboard = ({ user, userProfile }) => {
   const [reflections, setReflections] = useState([]);
   const [goals, setGoals] = useState([]);
-  const [meetings, setMeetings] = useState([]);
   const [importantDates, setImportantDates] = useState([]);
   const [advisorInfo, setAdvisorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,21 +42,28 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
   const [goalFilter, setGoalFilter] = useState('all');
 
+  // Use the meetings hook for meeting management
+  const {
+    upcomingMeetings,
+    pastMeetings,
+    loading: meetingsLoading,
+    error: meetingsError,
+    formatDate
+  } = useMeetings(user?.uid);
+
   // Wrap fetchUserData in useCallback to fix dependency warning
   const fetchUserData = useCallback(async () => {
     if (!user?.uid) return;
     
     try {
       setLoading(true);
-      const [userReflections, userGoals, userMeetings] = await Promise.all([
+      const [userReflections, userGoals] = await Promise.all([
         getUserReflections(user.uid),
-        getUserGoals(user.uid),
-        getUserMeetings(user.uid)
+        getUserGoals(user.uid)
       ]);
 
       setReflections(userReflections);
       setGoals(userGoals);
-      setMeetings(userMeetings);
       
       // Fetch important dates from assigned advisors
       if (userProfile?.advisor) {
@@ -200,15 +207,6 @@ const StudentDashboard = ({ user, userProfile }) => {
     return 'https://calendly.com/zacharychien';
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   const getUpcomingDates = () => {
     const today = new Date();
     return importantDates
@@ -219,6 +217,31 @@ const StudentDashboard = ({ user, userProfile }) => {
 
   const getRecentReflections = () => {
     return reflections.slice(0, 3);
+  };
+
+  // Meeting-related handlers
+  const handleBookMeeting = () => {
+    setShowCalendlyEmbed(true);
+  };
+
+  const handlePrepareForMeeting = (meeting) => {
+    openReflectionForm('pre-meeting', null, meeting?.id);
+  };
+
+  const handleJoinMeeting = (meeting) => {
+    if (meeting?.meetingLink) {
+      window.open(meeting.meetingLink, '_blank');
+    }
+  };
+
+  // Format date for important dates (simpler format)
+  const formatImportantDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const getGoalCounts = () => {
@@ -275,13 +298,6 @@ const StudentDashboard = ({ user, userProfile }) => {
     
     // For specific filters, show up to 3
     return filteredGoals.slice(0, 3);
-  };
-
-  const getUpcomingMeetings = () => {
-    const today = new Date();
-    return meetings
-      .filter(meeting => new Date(meeting.scheduledDate) >= today)
-      .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
   };
 
   if (loading) {
@@ -446,7 +462,7 @@ const StudentDashboard = ({ user, userProfile }) => {
               icon={Calendar}
               title="Schedule Meeting"
               subtitle="Book time with your advisor"
-              onClick={() => setShowCalendlyEmbed(true)}
+              onClick={handleBookMeeting}
             />
           </GridContainer>
         </div>
@@ -571,55 +587,16 @@ const StudentDashboard = ({ user, userProfile }) => {
       {/* Sidebar */}
       <DashboardGrid.Sidebar>
         {/* Upcoming Meetings */}
-        <div className="card">
-          <div className="card-header">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-green-600" />
-              <h2 className="card-title">Meetings</h2>
-            </div>
-            <button 
-              onClick={() => setShowCalendlyEmbed(true)}
-              className="btn btn-sm btn-secondary"
-            >
-              <Plus className="w-4 h-4" />
-              Book
-            </button>
-          </div>
-          <div className="space-y-3">
-            {getUpcomingMeetings().length > 0 ? (
-              getUpcomingMeetings().map((meeting, index) => (
-                <div key={meeting.id || index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {meeting.title || 'Independent Study Meeting'}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {formatDate(meeting.scheduledDate)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => openReflectionForm('pre-meeting', null, meeting.id)}
-                      className="btn btn-sm btn-primary"
-                    >
-                      Prepare
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600 mb-2">No meetings scheduled</p>
-                <button 
-                  onClick={() => setShowCalendlyEmbed(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  Book a Meeting
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <MeetingsCard
+          upcomingMeetings={upcomingMeetings}
+          pastMeetings={pastMeetings}
+          loading={meetingsLoading}
+          error={meetingsError}
+          onBookMeeting={handleBookMeeting}
+          onPrepareForMeeting={handlePrepareForMeeting}
+          onJoinMeeting={handleJoinMeeting}
+          formatDate={formatDate}
+        />
 
         {/* Important Dates */}
         <div className="card">
@@ -636,7 +613,7 @@ const StudentDashboard = ({ user, userProfile }) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-gray-900">{date.title}</h4>
-                      <p className="text-sm text-gray-600">{formatDate(date.date)}</p>
+                      <p className="text-sm text-gray-600">{formatImportantDate(date.date)}</p>
                       {date.description && (
                         <p className="text-xs text-gray-500 mt-1">{date.description}</p>
                       )}
