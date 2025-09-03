@@ -157,6 +157,70 @@ The migration follows a **utility-first approach** with careful preservation of 
 - **Phase 3C**: Add role-based navigation and permission enforcement
 - **Phase 3D**: Enhance advisor-specific features and interactions
 
+## UX Hotfix: Mobile + Onboarding (🚀 **ACTIVE**)
+**Emergency Phase** - Address critical usability blockers
+
+### Issues Addressed
+This hotfix resolves three key usability blockers that were impacting user experience:
+
+1. **Mobile Layout Overflows**: Fixed cramped components and horizontal scroll on small screens
+2. **Advisor Onboarding Misrouting**: Implemented role-aware post-auth redirect 
+3. **Advisor Student List Scaffolding**: Added infrastructure for future goal feedback workflow
+
+### Technical Implementation
+
+#### Mobile Responsiveness Improvements
+- **AppShell Header**: Enhanced mobile header with responsive text, reduced padding, improved user section layout
+- **DashboardGrid Components**: Updated responsive breakpoints from `md:` to `sm:` for better mobile behavior
+- **Card Spacing**: Implemented responsive padding (`var(--space-4)` on mobile, `var(--space-6)` on desktop)
+- **Grid Layouts**: Improved minimum item widths and responsive gap spacing
+- **Legacy CSS**: Added mobile-first responsive utilities for backward compatibility
+
+#### Role-Aware Redirect System
+- **useRoleRedirect Hook**: Custom hook that automatically redirects users based on their role after authentication
+- **Advisor Auto-Redirect**: Advisors are automatically sent to advisor dashboard view
+- **Student Auto-Redirect**: Students remain on student dashboard (default behavior)
+- **Session-Aware**: Only redirects once per session to prevent redirect loops
+
+#### Advisor Student List Preview
+- **Feature Flag**: `advisorStudentListPreview` (default: `false`) gates the new functionality
+- **AdvisorStudentList Component**: Placeholder component showing assigned students with goal counts
+- **Integration**: Accessible from advisor dashboard "View All Students" button when feature flag is enabled
+- **Future-Ready**: Includes placeholder for goal drill-down and feedback features
+
+### Files Modified
+- `src/components/shared/AppShell.jsx` - Mobile header improvements
+- `src/components/shared/DashboardGrid.jsx` - Responsive grid enhancements  
+- `src/styles/legacy.css` - Mobile-first spacing and layout rules
+- `src/config/featureFlags.ts` - Added `advisorStudentListPreview` flag
+- `src/hooks/useRoleRedirect.js` - New role-aware redirect logic
+- `src/App.js` - Integrated role redirect hook
+- `src/pages/AdvisorDashboard.js` - Added student list navigation
+- `src/components/advisor/AdvisorStudentList.jsx` - New placeholder component
+
+### Rollback Instructions
+**Immediate Rollback (Feature Flags)**:
+1. Set `featureFlags.advisorStudentListPreview = false` to disable student list preview
+2. Remove `useRoleRedirect` import and usage from `App.js` to revert to manual dashboard switching
+
+**Full Rollback (Code)**:
+1. Revert `AppShell.jsx` header changes to restore original desktop-focused layout
+2. Revert `DashboardGrid.jsx` responsive breakpoints to `md:` prefixes
+3. Revert `legacy.css` mobile spacing changes
+4. Remove `useRoleRedirect.js` and related imports
+5. Remove `AdvisorStudentList.jsx` component
+
+### Testing
+- Manual testing confirmed mobile layout improvements on 375px viewport
+- Role redirect logic tested for advisor and student user types
+- Feature flag gating verified for student list preview
+- Automated tests added for `useRoleRedirect` hook functionality
+
+### Browser Support
+- Mobile improvements tested on iOS Safari and Android Chrome
+- Responsive breakpoints follow Tailwind CSS standards
+- Legacy CSS fallbacks maintain IE11 compatibility where needed
+
 ## Phase 3: Interactive Controls & Content Cards (🔄 **PLANNED**)
 **Target Phase** - Migrate segmented controls and dynamic content
 

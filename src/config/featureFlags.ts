@@ -8,11 +8,15 @@
 export interface FeatureFlags {
   /** Enable new advisor layout structure (Phase 3A migration) */
   advisorLayoutV2: boolean;
+  /** Enable advisor student list preview (scaffolding for feedback workflow) */
+  advisorStudentListPreview: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
   // Default to true for new advisor layout structure
   advisorLayoutV2: true,
+  // Default to false for advisor student list preview
+  advisorStudentListPreview: false,
 };
 
 /**
@@ -27,4 +31,11 @@ export const getFeatureFlag = (flag: keyof FeatureFlags): boolean => {
  */
 export const isAdvisorLayoutV2Enabled = (): boolean => {
   return getFeatureFlag('advisorLayoutV2');
+};
+
+/**
+ * Check if advisor student list preview is enabled
+ */
+export const isAdvisorStudentListPreviewEnabled = (): boolean => {
+  return getFeatureFlag('advisorStudentListPreview');
 };

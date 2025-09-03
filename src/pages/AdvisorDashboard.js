@@ -3,7 +3,8 @@ import { Users, Calendar, TrendingUp, BookOpen, Target } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel';
-import { isAdvisorLayoutV2Enabled } from '../config/featureFlags.ts';
+import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
+import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import AdminDashboard from '../components/admin/AdminDashboard';
 
 /**
@@ -14,9 +15,11 @@ import AdminDashboard from '../components/admin/AdminDashboard';
  */
 const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [loading, setLoading] = useState(true);
+  const [showStudentList, setShowStudentList] = useState(false);
   
-  // Feature flag check
+  // Feature flag checks
   const useNewLayout = isAdvisorLayoutV2Enabled();
+  const isStudentListEnabled = isAdvisorStudentListPreviewEnabled();
 
   useEffect(() => {
     // Simulate data loading
@@ -58,6 +61,15 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     activeGoals: 24,
     overdueItems: 2
   };
+
+  // Show student list if requested and feature is enabled
+  if (showStudentList && isStudentListEnabled) {
+    return (
+      <AdvisorStudentList
+        onBack={() => setShowStudentList(false)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,9 +132,16 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
               <h2 className="card-title">Quick Actions</h2>
             </div>
             <AdvisorGridContainer cols={2} gap={3}>
-              <button className="btn btn-primary">
+              <button 
+                className="btn btn-primary"
+                onClick={() => isStudentListEnabled ? setShowStudentList(true) : null}
+                disabled={!isStudentListEnabled}
+              >
                 <Users className="w-4 h-4" />
                 View All Students
+                {!isStudentListEnabled && (
+                  <span className="text-xs opacity-75">(Preview)</span>
+                )}
               </button>
               <button className="btn btn-secondary">
                 <Calendar className="w-4 h-4" />
