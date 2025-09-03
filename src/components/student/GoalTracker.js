@@ -110,29 +110,37 @@ const GoalTracker = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-6 border border-green-200 shadow-sm">
         <div>
           <button
             onClick={onBack}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-2"
+            className="text-blue-600 hover:text-blue-800 text-sm mb-3 flex items-center gap-1 transition-colors"
           >
-            ← Back to Dashboard
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
-          <p className="text-gray-600">Manage your learning objectives and track progress</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Target className="w-8 h-8 text-green-600" />
+            </div>
+            Goal Tracker
+          </h1>
+          <p className="text-gray-600 mt-2">Manage your learning objectives and track your progress</p>
         </div>
         <button
           onClick={() => openForm()}
-          className="btn btn-primary"
+          className="btn btn-primary btn-lg shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
-          New Goal
+          <Plus className="w-5 h-5" />
+          Create New Goal
         </button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 mb-6">
+        <nav className="flex space-x-1">
           {[
             { key: 'all', label: 'All Goals', count: goalCounts.all },
             { key: 'active', label: 'Active', count: goalCounts.active },
@@ -143,13 +151,22 @@ const GoalTracker = ({
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
                 filter === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
               }`}
             >
-              {tab.label} {tab.count > 0 && `(${tab.count})`}
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                  filter === tab.key
+                    ? 'bg-blue-400 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </nav>
