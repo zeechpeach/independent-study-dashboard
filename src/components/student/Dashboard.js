@@ -220,8 +220,6 @@ const StudentDashboard = ({ user, userProfile }) => {
   };
 
   const getFilteredGoals = () => {
-    const counts = getGoalCounts();
-    
     switch (goalFilter) {
       case 'active':
         return goals.filter(goal => goal.status === 'active');
