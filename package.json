@@ -18,6 +18,11 @@
     "lucide-react": "^0.263.1",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

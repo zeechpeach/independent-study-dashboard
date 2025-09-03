@@ -4,7 +4,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
-import UIDemo from './pages/UIDemo';
 import './styles/globals.css';
 
 function App() {
@@ -14,7 +13,14 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
-  const [showUIDemo, setShowUIDemo] = useState(false);
+
+  // Log build SHA if available
+  React.useEffect(() => {
+    const buildSHA = process.env.REACT_APP_BUILD_SHA;
+    if (buildSHA) {
+      console.log(`Build SHA: ${buildSHA}`);
+    }
+  }, []);
 
   // Auth state listener with onboarding check
   React.useEffect(() => {
@@ -160,39 +166,16 @@ function App() {
     );
   }
 
-  // Show UI Demo if requested
-  if (showUIDemo) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="header">
-          <div className="container">
-            <div className="header-content">
-              <div className="logo">
-                Independent Study Dashboard - UI Demo
-              </div>
-              <button
-                onClick={() => setShowUIDemo(false)}
-                className="btn btn-secondary btn-sm"
-              >
-                Back to Login
-              </button>
-            </div>
-          </div>
-        </header>
-        <UIDemo />
-      </div>
-    );
-  }
-
-  // Ultra-simple login page
+  // Clean login page with Tailwind utilities
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md text-center">
-
+    <div className="min-h-screen bg-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
         {/* Title */}
-        <h1 className="text-3xl font-semibold text-gray-900 mb-12">
-          Independent Study Dashboard
-        </h1>
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-semibold text-gray-900">
+            Independent Study Dashboard
+          </h1>
+        </div>
 
         {/* Error Message */}
         {error && (
@@ -202,11 +185,11 @@ function App() {
         )}
 
         {/* Single Sign In Button */}
-        <div className="flex flex-col gap-6 items-center mb-12">
+        <div className="mb-12">
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="btn btn-primary btn-lg px-8 py-4 w-full max-w-xs"
+            className="btn btn-primary btn-lg w-full"
           >
             {loading ? (
               <div className="loading-spinner" />
@@ -234,41 +217,20 @@ function App() {
               </>
             )}
           </button>
-          
-          <div className="text-center">
-            <span className="text-gray-400 text-sm">or</span>
-          </div>
-          
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button
-              onClick={() => setShowUIDemo(true)}
-              className="btn btn-outline px-8 py-3 w-full"
-            >
-              View Phase 2 UI Demo
-            </button>
-            
-            <button
-              onClick={() => {
-                setUser({ uid: 'demo', displayName: 'Demo Student', email: 'demo@example.com' });
-                setUserProfile({ onboardingComplete: true, userType: 'student' });
-              }}
-              className="btn btn-secondary px-8 py-3 w-full"
-            >
-              View Dashboard Demo
-            </button>
-          </div>
         </div>
 
         {/* Help */}
-        <p className="text-sm text-gray-500">
-          Need help? Contact{' '}
-          <a 
-            href="mailto:zchien@bwscampus.com" 
-            className="text-blue-600 hover:text-blue-700"
-          >
-            zchien@bwscampus.com
-          </a>
-        </p>
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            Need help? Contact{' '}
+            <a 
+              href="mailto:zchien@bwscampus.com" 
+              className="text-blue-600 hover:text-blue-700 underline"
+            >
+              zchien@bwscampus.com
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
