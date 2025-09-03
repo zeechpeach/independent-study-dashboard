@@ -218,6 +218,57 @@ This hotfix resolves three key usability blockers that were impacting user exper
 
 ### Browser Support
 - Mobile improvements tested on iOS Safari and Android Chrome
+
+---
+
+## Advisor Experience Phase 2.1 (✅ **COMPLETED**)
+
+### Overview
+Phase 2.1 transitions from single-pathway advisor assignment to a flexible multi-pathway system with Important Dates functionality. See [advisor-experience-phase-2.1.md](./advisor-experience-phase-2.1.md) for detailed documentation.
+
+### Key Features
+- **Multi-Pathway Advisors**: Join table `advisor_pathways` with ANY overlap matching logic
+- **Important Dates**: Advisor-managed dates visible to assigned students
+- **Enhanced Onboarding**: Visual advisor selection with pathway badges and ranking
+- **Removed Advisor Scheduling**: Advisors can no longer initiate meeting scheduling
+- **Student Dashboard Integration**: Displays important dates from all assigned advisors
+
+### Database Schema Changes
+- **New table: `advisor_pathways`** (advisor_id, pathway, created_at)
+- **New table: `advisor_important_dates`** (id, advisor_id, title, description, date, created_at, updated_at)
+- **Migration function**: `migrateAdvisorPathwaysData()` for legacy data
+
+### Files Modified
+- `src/services/firebase.js` - Added multi-pathway and important dates functions
+- `src/components/shared/OnboardingForm.js` - Multi-pathway selection and enhanced advisor display
+- `src/components/student/Dashboard.js` - Important dates integration
+- `src/pages/AdvisorDashboard.js` - Removed "Schedule Meetings" button
+- `src/pages/AdvisorDashboard_backup.js` - Removed "Schedule Meetings" button
+
+### Testing
+- **Unit Tests**: Multi-pathway persistence, important dates CRUD, onboarding flow
+- **Integration Tests**: Firebase function exports, access control validation
+- **Manual Testing**: Advisor onboarding, student advisor selection, important dates display
+
+### Rollback Instructions
+**Database Rollback**:
+1. Drop `advisor_pathways` collection
+2. Drop `advisor_important_dates` collection
+3. Restore original `getAdvisorsByPathway()` usage in onboarding
+
+**Code Rollback**:
+1. Revert `OnboardingForm.js` to single pathway selection
+2. Restore "Schedule Meetings" buttons in advisor dashboards
+3. Revert `Dashboard.js` to use `getAllImportantDates()`
+4. Remove new Firebase functions from `firebase.js`
+
+### Migration Guide
+```javascript
+// Run once to migrate existing advisor pathway data
+import { migrateAdvisorPathwaysData } from './services/firebase';
+const results = await migrateAdvisorPathwaysData();
+console.log(`Migration complete: ${results.migrated} advisors migrated, ${results.skipped} skipped`);
+```
 - Responsive breakpoints follow Tailwind CSS standards
 - Legacy CSS fallbacks maintain IE11 compatibility where needed
 
