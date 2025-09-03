@@ -8,6 +8,7 @@ import OnboardingForm from './components/shared/OnboardingForm';
 import AppShell from './components/shared/AppShell';
 import { Button } from './components/ui';
 import { isAdvisorLayoutV2Enabled } from './config/featureFlags.ts';
+import { useRoleRedirect } from './hooks/useRoleRedirect';
 import './styles/globals.css';
 
 function App() {
@@ -88,6 +89,9 @@ function App() {
   const isAdmin = user?.email === process.env.REACT_APP_ADMIN_EMAIL || userProfile?.isAdmin;
   const isAdvisor = userProfile?.userType === 'advisor';
   const useNewAdvisorLayout = isAdvisorLayoutV2Enabled();
+
+  // Role-aware redirect hook - automatically redirects users based on their role
+  useRoleRedirect(userProfile, setShowAdminDashboard);
 
   // Show loading while checking auth state
   if (authLoading) {

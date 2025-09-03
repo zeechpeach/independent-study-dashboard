@@ -9,7 +9,7 @@ import React from 'react';
  */
 const DashboardGrid = ({ children, className = '' }) => {
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start ${className}`}>
+    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-start ${className}`}>
       {children}
     </div>
   );
@@ -23,7 +23,7 @@ const DashboardGrid = ({ children, className = '' }) => {
  */
 DashboardGrid.Main = ({ children, className = '' }) => {
   return (
-    <div className={`lg:col-span-2 space-y-6 min-w-0 ${className}`}>
+    <div className={`lg:col-span-2 space-y-4 sm:space-y-6 min-w-0 ${className}`}>
       {children}
     </div>
   );
@@ -37,7 +37,7 @@ DashboardGrid.Main = ({ children, className = '' }) => {
  */
 DashboardGrid.Sidebar = ({ children, className = '' }) => {
   return (
-    <div className={`lg:col-span-1 space-y-6 min-w-0 lg:min-w-80 ${className}`}>
+    <div className={`lg:col-span-1 space-y-4 sm:space-y-6 min-w-0 lg:min-w-80 ${className}`}>
       {children}
     </div>
   );
@@ -56,28 +56,28 @@ export const GridContainer = ({
   className = '',
   minItemWidth = '320px' 
 }) => {
-  // Convert cols number to Tailwind classes
+  // Convert cols number to Tailwind classes with better mobile handling
   const getGridCols = (cols) => {
     const colsMap = {
       1: 'grid-cols-1',
-      2: 'grid-cols-1 md:grid-cols-2',
-      3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-      4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-      6: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+      2: 'grid-cols-1 sm:grid-cols-2',
+      3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+      4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+      6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
     };
-    return colsMap[cols] || 'grid-cols-1 md:grid-cols-2';
+    return colsMap[cols] || 'grid-cols-1 sm:grid-cols-2';
   };
 
-  // Convert gap number to Tailwind classes
+  // Convert gap number to Tailwind classes with responsive gaps
   const getGap = (gap) => {
     const gapMap = {
       2: 'gap-2',
-      3: 'gap-3', 
-      4: 'gap-4',
-      6: 'gap-6',
-      8: 'gap-8'
+      3: 'gap-3 sm:gap-4', 
+      4: 'gap-3 sm:gap-4',
+      6: 'gap-4 sm:gap-6',
+      8: 'gap-4 sm:gap-8'
     };
-    return gapMap[gap] || 'gap-4';
+    return gapMap[gap] || 'gap-3 sm:gap-4';
   };
 
   const gridClasses = `grid ${getGridCols(cols)} ${getGap(gap)} ${className}`;
