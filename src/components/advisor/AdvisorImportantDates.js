@@ -14,15 +14,20 @@ const AdvisorImportantDates = ({ user, onBack }) => {
 
   useEffect(() => {
     fetchImportantDates();
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchImportantDates = async () => {
-    if (!user?.id) return;
+    const advisorId = user?.id || user?.uid;
+    if (!advisorId) {
+      setLoading(false); // Clear loading when no valid ID
+      setError('No advisor ID available');
+      return;
+    }
     
     try {
       setLoading(true);
       setError(null);
-      const dates = await getAdvisorImportantDates(user.id);
+      const dates = await getAdvisorImportantDates(advisorId);
       setImportantDates(dates);
     } catch (err) {
       console.error('Error fetching advisor important dates:', err);
@@ -34,8 +39,9 @@ const AdvisorImportantDates = ({ user, onBack }) => {
 
   const handleCreateDate = async (dateData) => {
     try {
+      const advisorId = user?.id || user?.uid;
       // For advisors, always set their ID as the advisorId
-      await createImportantDate(dateData, user.id);
+      await createImportantDate(dateData, advisorId);
       await fetchImportantDates();
     } catch (error) {
       console.error('Error creating important date:', error);
@@ -95,7 +101,7 @@ const AdvisorImportantDates = ({ user, onBack }) => {
       onUpdateDate={handleUpdateDate}
       onDeleteDate={handleDeleteDate}
       mode="advisor"
-      currentUserId={user?.id}
+      currentUserId={user?.id || user?.uid}
     />
   );
 };
