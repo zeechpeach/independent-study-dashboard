@@ -13,11 +13,11 @@ const GoalPreviewCard = ({ goal, onClick }) => {
 
   return (
     <div 
-      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
+      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
       onClick={handleClick}
     >
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-semibold text-gray-900 truncate flex-1">
+        <h4 className="font-semibold text-gray-900 truncate flex-1 group-hover:text-blue-600 transition-colors duration-200">
           {goal.title || 'Untitled Goal'}
         </h4>
         <div className="flex items-center gap-2 ml-2">

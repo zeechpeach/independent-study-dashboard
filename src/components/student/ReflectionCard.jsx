@@ -29,12 +29,12 @@ const ReflectionCard = ({ reflection, onClick }) => {
 
   return (
     <div 
-      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
+      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
       onClick={handleClick}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${
             isPreMeeting 
               ? 'bg-blue-100 text-blue-600' 
               : 'bg-green-100 text-green-600'

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Target, Calendar, Clock, Plus } from 'lucide-react';
 import ReflectionForm from './ReflectionForm';
 import GoalTracker from './GoalTracker';
-import CalendlyEmbed from '../shared/CalendlyEmbed';
+import CalendlyEmbed from '../shared/CalendlyEmbed.jsx';
 import GoalPreviewCard from './GoalPreviewCard';
 import ReflectionCard from './ReflectionCard';
 import ReflectionModal from './ReflectionModal';
 import QuickActionCard from './QuickActionCard';
 import GoalModal from './GoalModal';
+import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import { 
   createReflection, 
   updateReflection, 
@@ -220,9 +221,69 @@ const StudentDashboard = ({ user, userProfile }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="loading-spinner"></div>
-        <span className="ml-2 text-gray-600">Loading your dashboard...</span>
+      <div className="space-y-6">
+        {/* Welcome Header Skeleton */}
+        <div className="space-y-2">
+          <div className="bg-gray-200 animate-pulse rounded h-8 w-80"></div>
+          <div className="bg-gray-200 animate-pulse rounded h-5 w-64"></div>
+        </div>
+
+        {/* Quick Actions Skeleton */}
+        <div className="space-y-4">
+          <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SkeletonQuickAction />
+            <SkeletonQuickAction />
+            <SkeletonQuickAction />
+            <SkeletonQuickAction />
+          </div>
+        </div>
+
+        {/* Dashboard Grid Skeleton */}
+        <div className="grid grid-2">
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
+              <div className="bg-gray-200 animate-pulse rounded h-8 w-24"></div>
+            </div>
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </div>
+          
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div className="bg-gray-200 animate-pulse rounded h-6 w-40"></div>
+              <div className="bg-gray-200 animate-pulse rounded h-8 w-24"></div>
+            </div>
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </div>
+          
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div className="bg-gray-200 animate-pulse rounded h-6 w-36"></div>
+            </div>
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </div>
+          
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
+            </div>
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
