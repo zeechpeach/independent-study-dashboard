@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, AlertTriangle, BookOpen, Target, Clock, Eye, MessageSquare } from 'lucide-react';
 import StudentOverview from './StudentOverview';
 import ImportantDates from './ImportantDates';
+import { GridContainer } from '../shared/DashboardGrid';
 import {
   getAllUsers,
   getAllMeetings,
@@ -236,7 +237,7 @@ const AdminDashboard = ({ user, onBack }) => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-3">
+      <GridContainer cols={3}>
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -269,9 +270,9 @@ const AdminDashboard = ({ user, onBack }) => {
             <Target className="w-8 h-8 text-purple-600" />
           </div>
         </div>
-      </div>
+      </GridContainer>
 
-      <div className="grid grid-2">
+      <GridContainer cols={2}>
         {/* Students Needing Attention */}
         <div className="card">
           <div className="card-header">
@@ -426,7 +427,7 @@ const AdminDashboard = ({ user, onBack }) => {
             </button>
           </div>
         </div>
-      </div>
+      </GridContainer>
     </div>
   );
 };

@@ -10,6 +10,7 @@ import QuickActionCard from './QuickActionCard';
 import GoalModal from './GoalModal';
 import SegmentedControl from '../ui/SegmentedControl';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
+import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
 import { 
   createReflection, 
   updateReflection, 
@@ -266,8 +267,8 @@ const StudentDashboard = ({ user, userProfile }) => {
 
   if (loading) {
     return (
-      <div className="dashboard-layout">
-        <div className="dashboard-main space-y-6">
+      <DashboardGrid>
+        <DashboardGrid.Main>
           {/* Welcome Header Skeleton */}
           <div className="space-y-2">
             <div className="bg-gray-200 animate-pulse rounded h-8 w-80"></div>
@@ -277,12 +278,12 @@ const StudentDashboard = ({ user, userProfile }) => {
           {/* Quick Actions Skeleton */}
           <div className="space-y-4">
             <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <GridContainer cols={2}>
               <SkeletonQuickAction />
               <SkeletonQuickAction />
               <SkeletonQuickAction />
               <SkeletonQuickAction />
-            </div>
+            </GridContainer>
           </div>
 
           {/* Goals Skeleton */}
@@ -309,9 +310,9 @@ const StudentDashboard = ({ user, userProfile }) => {
               <SkeletonCard />
             </div>
           </div>
-        </div>
+        </DashboardGrid.Main>
 
-        <div className="dashboard-sidebar space-y-6">
+        <DashboardGrid.Sidebar>
           {/* Meetings Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
@@ -348,8 +349,8 @@ const StudentDashboard = ({ user, userProfile }) => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </DashboardGrid.Sidebar>
+      </DashboardGrid>
     );
   }
 
@@ -381,9 +382,9 @@ const StudentDashboard = ({ user, userProfile }) => {
   }
 
   return (
-    <div className="dashboard-layout">
+    <DashboardGrid>
       {/* Main Content */}
-      <div className="dashboard-main space-y-6">
+      <DashboardGrid.Main>
         {/* Welcome Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -402,7 +403,7 @@ const StudentDashboard = ({ user, userProfile }) => {
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             Quick Actions
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <GridContainer cols={2}>
             <QuickActionCard
               icon={BookOpen}
               title="Pre-Meeting Reflection"
@@ -428,7 +429,7 @@ const StudentDashboard = ({ user, userProfile }) => {
               subtitle="Book time with your advisor"
               onClick={() => setShowCalendlyEmbed(true)}
             />
-          </div>
+          </GridContainer>
         </div>
 
         {/* Goals Section with Filter */}
@@ -546,10 +547,10 @@ const StudentDashboard = ({ user, userProfile }) => {
             )}
           </div>
         </div>
-      </div>
+      </DashboardGrid.Main>
 
       {/* Sidebar */}
-      <div className="dashboard-sidebar space-y-6">
+      <DashboardGrid.Sidebar>
         {/* Upcoming Meetings */}
         <div className="card">
           <div className="card-header">
@@ -665,12 +666,7 @@ const StudentDashboard = ({ user, userProfile }) => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Help Section */}
-      <div className="col-span-full text-sm text-gray-500 text-center mt-8">
-        Having issues? Contact your coordinator at {process.env.REACT_APP_ADMIN_EMAIL}
-      </div>
+      </DashboardGrid.Sidebar>
 
       {/* Modals */}
       <ReflectionModal
@@ -695,7 +691,7 @@ const StudentDashboard = ({ user, userProfile }) => {
         schedulingLink={getSchedulingLink()}
         userName={user?.displayName}
       />
-    </div>
+    </DashboardGrid>
   );
 };
 
