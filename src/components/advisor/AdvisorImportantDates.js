@@ -14,7 +14,7 @@ const AdvisorImportantDates = ({ user, onBack }) => {
 
   useEffect(() => {
     fetchImportantDates();
-  }, [user?.id]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchImportantDates = async () => {
     if (!user?.id) return;

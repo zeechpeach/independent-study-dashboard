@@ -4,6 +4,8 @@ import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
+import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
+import AdvisorImportantDatesPanel from '../components/advisor/AdvisorImportantDatesPanel';
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData } from '../services/firebase';
 import AdminDashboard from '../components/admin/AdminDashboard';
@@ -17,6 +19,7 @@ import AdminDashboard from '../components/admin/AdminDashboard';
 const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [showStudentList, setShowStudentList] = useState(false);
+  const [showImportantDates, setShowImportantDates] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
   
@@ -94,6 +97,16 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         onBack={() => setShowStudentList(false)}
         advisorName={advisorName}
         userProfile={userProfile}
+      />
+    );
+  }
+
+  // Show important dates management if requested
+  if (showImportantDates) {
+    return (
+      <AdvisorImportantDates
+        user={user}
+        onBack={() => setShowImportantDates(false)}
       />
     );
   }
@@ -187,6 +200,13 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                 <BookOpen className="w-4 h-4" />
                 Review Reflections
               </button>
+              <button 
+                onClick={() => setShowImportantDates(true)}
+                className="btn btn-secondary"
+              >
+                <Calendar className="w-4 h-4" />
+                Important Dates
+              </button>
               <button className="btn btn-secondary">
                 <TrendingUp className="w-4 h-4" />
                 Progress Reports
@@ -244,6 +264,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <NeedsAttentionPanel 
             advisorName={advisorName}
             userProfile={userProfile}
+          />
+          <AdvisorImportantDatesPanel
+            userProfile={userProfile}
+            onManageClick={() => setShowImportantDates(true)}
           />
           <RecentReflectionsPanel 
             advisorName={advisorName}
