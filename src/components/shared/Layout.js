@@ -25,11 +25,6 @@ const Layout = ({ children }) => {
             {user && (
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={user.photoURL || '/default-avatar.png'}
-                    alt={user.displayName}
-                    className="w-8 h-8 rounded-full"
-                  />
                   <span className="text-sm font-medium text-gray-700">
                     {user.displayName}
                   </span>
