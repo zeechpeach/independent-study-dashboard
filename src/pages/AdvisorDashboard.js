@@ -182,10 +182,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                   <span className="text-xs opacity-75">(Preview)</span>
                 )}
               </button>
-              <button className="btn btn-secondary">
-                <Calendar className="w-4 h-4" />
-                Schedule Meetings
-              </button>
+
               <button className="btn btn-secondary">
                 <BookOpen className="w-4 h-4" />
                 Review Reflections
