@@ -135,6 +135,13 @@
 /* Import legacy component styles for backward compatibility */
 @import './legacy.css';
 
+/* Focus ring utility */
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+}
+
 .page-enter-active {
   opacity: 1;
   transform: translateY(0);

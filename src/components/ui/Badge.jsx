@@ -17,7 +17,12 @@ const Badge = ({
     blue: 'bg-blue-100 text-blue-800',
     indigo: 'bg-indigo-100 text-indigo-800',
     purple: 'bg-purple-100 text-purple-800',
-    pink: 'bg-pink-100 text-pink-800'
+    pink: 'bg-pink-100 text-pink-800',
+    // Semantic variants using design tokens
+    success: 'bg-green-50 text-green-800 border border-green-200',
+    warning: 'bg-yellow-50 text-yellow-800 border border-yellow-200',
+    danger: 'bg-red-50 text-red-800 border border-red-200',
+    info: 'bg-blue-50 text-blue-800 border border-blue-200',
   };
   
   const sizeClasses = {

@@ -207,7 +207,7 @@
   font-size: var(--font-size-sm);
 }
 
-/* Buttons */
+/* Buttons @deprecated - Use Button component from src/components/ui instead */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -247,6 +247,7 @@
   flex-shrink: 0;
 }
 
+/* @deprecated - Use Button component with variant="primary" */
 .btn-primary {
   background: var(--color-primary-600);
   color: white;
@@ -260,6 +261,7 @@
   box-shadow: var(--shadow-md);
 }
 
+/* @deprecated - Use Button component with variant="secondary" */
 .btn-secondary {
   background: white;
   color: var(--color-gray-700);
@@ -273,6 +275,7 @@
   box-shadow: var(--shadow-md);
 }
 
+/* @deprecated - Use Button component with variant="outline" */
 .btn-outline {
   background: transparent;
   color: var(--color-gray-700);
@@ -284,6 +287,7 @@
   border-color: var(--color-gray-400);
 }
 
+/* @deprecated - Use Button component with variant="success" */
 .btn-success {
   background: var(--color-success-500);
   color: white;
@@ -297,6 +301,7 @@
   box-shadow: var(--shadow-md);
 }
 
+/* @deprecated - Use Button component with variant="danger" */
 .btn-danger {
   background: var(--color-error-500);
   color: white;
@@ -310,12 +315,14 @@
   box-shadow: var(--shadow-md);
 }
 
+/* @deprecated - Use Button component with size="sm" */
 .btn-sm {
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-size-xs);
   border-radius: var(--border-radius-sm);
 }
 
+/* @deprecated - Use Button component with size="lg" */
 .btn-lg {
   padding: var(--space-4) var(--space-6);
   font-size: var(--font-size-base);
@@ -324,7 +331,7 @@
   max-height: 48px;
 }
 
-/* Status Indicators */
+/* Status Indicators @deprecated - Use Badge component from src/components/ui instead */
 .status {
   display: inline-flex;
   align-items: center;
@@ -336,24 +343,28 @@
   letter-spacing: 0.025em;
 }
 
+/* @deprecated - Use Badge component with variant="success" */
 .status-success {
   background: var(--color-success-50);
   color: var(--color-success-600);
   border: 1px solid var(--color-success-500);
 }
 
+/* @deprecated - Use Badge component with variant="warning" */
 .status-warning {
   background: var(--color-warning-50);
   color: var(--color-warning-600);
   border: 1px solid var(--color-warning-500);
 }
 
+/* @deprecated - Use Badge component with variant="danger" */
 .status-danger {
   background: var(--color-error-50);
   color: var(--color-error-600);
   border: 1px solid var(--color-error-500);
 }
 
+/* @deprecated - Use Badge component with variant="info" */
 .status-info {
   background: var(--color-primary-50);
   color: var(--color-primary-600);

@@ -40,6 +40,22 @@ module.exports = {
           900: '#111827',
           950: '#030712',
         },
+        // Semantic colors
+        success: '#22c55e',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#0ea5e9',
+      },
+      borderRadius: {
+        'sm': '0.375rem',
+        'md': '0.5rem',
+        'lg': '0.75rem',
+      },
+      boxShadow: {
+        'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+      },
+      transitionDuration: {
+        'DEFAULT': '150ms',
       },
     },
   },

@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import StudentDashboard from './components/student/Dashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
+import { Button } from './components/ui';
 import './styles/globals.css';
 
 function App() {
@@ -186,10 +187,11 @@ function App() {
 
         {/* Single Sign In Button */}
         <div className="mb-12">
-          <button
+          <Button
             onClick={handleLogin}
             disabled={loading}
-            className="btn btn-primary btn-lg w-full"
+            size="lg"
+            className="w-full"
           >
             {loading ? (
               <div className="loading-spinner" />
@@ -216,7 +218,7 @@ function App() {
                 Continue with Google
               </>
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Help */}
