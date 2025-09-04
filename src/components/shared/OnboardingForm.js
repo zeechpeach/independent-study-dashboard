@@ -82,7 +82,32 @@ const OnboardingForm = ({ user, onComplete }) => {
     setLoading(true);
     setError('');
     
+    // Validate required fields before submission
     try {
+      if (!user || !user.uid) {
+        throw new Error('User authentication required');
+      }
+      
+      if (!userType) {
+        throw new Error('User type is required');
+      }
+      
+      if (userType === 'student') {
+        if (!formData.pathway) {
+          throw new Error('Pathway selection is required for students');
+        }
+        if (!formData.advisor) {
+          throw new Error('Advisor selection is required for students');
+        }
+        if (!formData.projectDescription.trim()) {
+          throw new Error('Project description is required for students');
+        }
+      } else if (userType === 'advisor') {
+        if (formData.pathways.length === 0) {
+          throw new Error('At least one pathway is required for advisors');
+        }
+      }
+      
       const onboardingData = {
         userType,
         // For students, save single pathway; for advisors, save first pathway for legacy compatibility
@@ -91,7 +116,7 @@ const OnboardingForm = ({ user, onComplete }) => {
           advisor: formData.advisor,
           projectDescription: formData.projectDescription
         } : {
-          schedulingTool: formData.schedulingTool
+          schedulingTool: formData.schedulingTool || ''
         }),
         onboardingComplete: true,
         createdAt: new Date()
@@ -106,7 +131,20 @@ const OnboardingForm = ({ user, onComplete }) => {
       
       onComplete();
     } catch (error) {
-      setError('Failed to save onboarding information. Please try again.');
+      let errorMessage = 'Failed to save onboarding information. Please try again.';
+      
+      // Provide more specific error messages for common issues
+      if (error.message.includes('authentication') || error.message.includes('User authentication')) {
+        errorMessage = 'Please sign in again to complete onboarding.';
+      } else if (error.message.includes('required')) {
+        errorMessage = error.message;
+      } else if (error.message.includes('permission-denied')) {
+        errorMessage = 'You do not have permission to complete onboarding. Please contact an administrator.';
+      } else if (error.message.includes('unavailable')) {
+        errorMessage = 'Service is temporarily unavailable. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
       console.error('Onboarding error:', error);
     } finally {
       setLoading(false);
