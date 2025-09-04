@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock } from 'lucide-react';
-import { getAdvisorImportantDates } from '../../services/firebase';
+import { getImportantDatesForAdvisors } from '../../services/firebase';
 
 const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
   const [importantDates, setImportantDates] = useState([]);
@@ -18,8 +18,10 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
       setLoading(true);
       setError(null);
       
-      // Get advisor's own important dates
-      const dates = await getAdvisorImportantDates(userProfile.id);
+      // Get important dates for this advisor + global dates
+      // Use the same logic as student panel to ensure consistency
+      const advisorIds = [userProfile.id];
+      const dates = await getImportantDatesForAdvisors(advisorIds);
       
       // Show only upcoming dates (today or future) and limit to 3 for dashboard
       const today = new Date().toISOString().split('T')[0];

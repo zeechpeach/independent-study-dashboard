@@ -142,7 +142,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       </div>
 
       {/* Stats Overview */}
-      <AdvisorGridContainer cols={3}>
+      <AdvisorGridContainer cols={2}>
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -154,16 +154,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           </div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">This Week</p>
-              <p className="text-2xl font-bold text-gray-900">{statsData.weeklyMeetings}</p>
-              <p className="text-xs text-gray-500">meetings held</p>
-            </div>
-            <Calendar className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
+
 
         <div className="card">
           <div className="flex items-center justify-between">
@@ -235,15 +226,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                   </p>
                 )}
               </div>
-              
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium">
-                    {statsData.weeklyMeetings} meeting{statsData.weeklyMeetings !== 1 ? 's' : ''} held this week
-                  </span>
-                </div>
-              </div>
+
 
               {statsData.totalStudents === 0 && (
                 <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">

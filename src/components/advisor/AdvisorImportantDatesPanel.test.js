@@ -10,10 +10,10 @@ import AdvisorImportantDatesPanel from './AdvisorImportantDatesPanel';
 
 // Mock Firebase functions
 jest.mock('../../services/firebase', () => ({
-  getAdvisorImportantDates: jest.fn()
+  getImportantDatesForAdvisors: jest.fn()
 }));
 
-const { getAdvisorImportantDates } = require('../../services/firebase');
+const { getImportantDatesForAdvisors } = require('../../services/firebase');
 
 describe('Advisor Important Dates Integration', () => {
   const mockUserProfile = {
@@ -30,7 +30,7 @@ describe('Advisor Important Dates Integration', () => {
   });
 
   test('AdvisorImportantDatesPanel renders correctly with empty state', async () => {
-    getAdvisorImportantDates.mockResolvedValue([]);
+    getImportantDatesForAdvisors.mockResolvedValue([]);
 
     render(
       <AdvisorImportantDatesPanel
@@ -48,7 +48,7 @@ describe('Advisor Important Dates Integration', () => {
   });
 
   test('Manage button calls onManageClick callback', async () => {
-    getAdvisorImportantDates.mockResolvedValue([]);
+    getImportantDatesForAdvisors.mockResolvedValue([]);
 
     render(
       <AdvisorImportantDatesPanel
@@ -67,8 +67,8 @@ describe('Advisor Important Dates Integration', () => {
     expect(mockOnManageClick).toHaveBeenCalledTimes(1);
   });
 
-  test('Component calls getAdvisorImportantDates with correct advisor ID', async () => {
-    getAdvisorImportantDates.mockResolvedValue([]);
+  test('Component calls getImportantDatesForAdvisors with correct advisor ID array', async () => {
+    getImportantDatesForAdvisors.mockResolvedValue([]);
 
     render(
       <AdvisorImportantDatesPanel
@@ -80,6 +80,6 @@ describe('Advisor Important Dates Integration', () => {
     // Wait for API call
     await screen.findByText('No upcoming important dates');
 
-    expect(getAdvisorImportantDates).toHaveBeenCalledWith('advisor_123');
+    expect(getImportantDatesForAdvisors).toHaveBeenCalledWith(['advisor_123']);
   });
 });

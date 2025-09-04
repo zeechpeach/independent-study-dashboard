@@ -165,6 +165,15 @@ const MeetingsCard = ({
             )}
           </div>
         )}
+
+        {/* Calendly Integration Notice */}
+        <div className="pt-3 border-t border-gray-100">
+          <div className="p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-800">
+              <strong>📝 Note:</strong> Even when booking meetings through Calendly, you must manually add them to your dashboard using the "Book" button above.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
