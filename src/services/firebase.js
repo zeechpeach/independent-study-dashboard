@@ -2,6 +2,28 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
+// Validate Firebase configuration
+const validateFirebaseConfig = () => {
+  const requiredVars = [
+    'REACT_APP_FIREBASE_API_KEY',
+    'REACT_APP_FIREBASE_AUTH_DOMAIN',
+    'REACT_APP_FIREBASE_PROJECT_ID',
+    'REACT_APP_FIREBASE_STORAGE_BUCKET',
+    'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+    'REACT_APP_FIREBASE_APP_ID'
+  ];
+  
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missing.length > 0) {
+    console.error('Missing required Firebase environment variables:', missing);
+    throw new Error(`Firebase configuration incomplete. Missing: ${missing.join(', ')}`);
+  }
+};
+
+// Validate configuration before initializing
+validateFirebaseConfig();
+
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -16,6 +38,35 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+/**
+ * Helper function to handle Firebase errors consistently
+ * @param {Error} error - The original error
+ * @param {string} operation - Description of the operation that failed
+ * @returns {Error} - Enhanced error with better message
+ */
+const enhanceFirebaseError = (error, operation) => {
+  let message = `Failed to ${operation}`;
+  
+  if (error.code === 'permission-denied') {
+    message = `Permission denied for ${operation}. Please check your access rights.`;
+  } else if (error.code === 'unavailable') {
+    message = `Service temporarily unavailable for ${operation}. Please check your internet connection and try again.`;
+  } else if (error.code === 'not-found') {
+    message = `Resource not found for ${operation}.`;
+  } else if (error.code === 'already-exists') {
+    message = `Resource already exists for ${operation}.`;
+  } else if (error.code === 'invalid-argument') {
+    message = `Invalid data provided for ${operation}.`;
+  } else if (error.message) {
+    message = error.message;
+  }
+  
+  const enhancedError = new Error(message);
+  enhancedError.originalError = error;
+  enhancedError.operation = operation;
+  return enhancedError;
+};
+
 // Auth functions
 export const googleProvider = new GoogleAuthProvider();
 
@@ -23,6 +74,11 @@ export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
+    
+    // Validate user data
+    if (!user || !user.email) {
+      throw new Error('Invalid user data received from Google authentication');
+    }
     
     // Check if email domain is allowed
     if (!user.email.endsWith('@bwscampus.com')) {
@@ -39,12 +95,15 @@ export const signInWithGoogle = async () => {
         lastLoginAt: serverTimestamp()
       });
     } else {
+      // Validate admin email configuration
+      const isAdmin = user.email === process.env.REACT_APP_ADMIN_EMAIL;
+      
       // New user, create basic profile (onboarding will complete it)
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        name: user.displayName,
-        photoURL: user.photoURL,
-        isAdmin: user.email === process.env.REACT_APP_ADMIN_EMAIL,
+        name: user.displayName || user.email.split('@')[0], // Fallback to email prefix if no displayName
+        photoURL: user.photoURL || null,
+        isAdmin: isAdmin,
         onboardingComplete: false, // Explicitly set to false for new users
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp()
@@ -53,6 +112,20 @@ export const signInWithGoogle = async () => {
     
     return user;
   } catch (error) {
+    // Enhanced error handling with specific messages
+    if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in was cancelled. Please try again.');
+    } else if (error.code === 'auth/popup-blocked') {
+      throw new Error('Pop-up was blocked. Please enable pop-ups and try again.');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    } else if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. Please contact an administrator.');
+    } else if (error.message.includes('Access denied')) {
+      // Re-throw our custom domain validation error
+      throw error;
+    }
+    
     console.error('Error signing in with Google:', error);
     throw error;
   }
@@ -70,12 +143,16 @@ export const logOut = async () => {
 // User functions
 export const getUserProfile = async (uid) => {
   try {
+    if (!uid) {
+      throw new Error('User ID is required');
+    }
+    
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() : null;
   } catch (error) {
     console.error('Error getting user profile:', error);
-    throw error;
+    throw enhanceFirebaseError(error, 'get user profile');
   }
 };
 
@@ -94,6 +171,19 @@ export const updateUserProfile = async (uid, data) => {
 // Onboarding functions
 export const saveUserOnboarding = async (userId, onboardingData) => {
   try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    if (!onboardingData) {
+      throw new Error('Onboarding data is required');
+    }
+    
+    // Validate required onboarding fields
+    if (!onboardingData.userType) {
+      throw new Error('User type is required in onboarding data');
+    }
+    
     await updateDoc(doc(db, 'users', userId), {
       ...onboardingData,
       onboardingComplete: true,
@@ -101,7 +191,7 @@ export const saveUserOnboarding = async (userId, onboardingData) => {
     });
   } catch (error) {
     console.error('Error saving onboarding:', error);
-    throw error;
+    throw enhanceFirebaseError(error, 'save onboarding data');
   }
 };
 
@@ -937,6 +1027,10 @@ export const getUserCalendlyEvents = async (userId) => {
       orderBy('createdAt', 'desc')
     );
     const querySnapshot = await getDocs(q);
+    if (!querySnapshot || !querySnapshot.docs) {
+      console.warn('No querySnapshot or docs found for getUserCalendlyEvents');
+      return [];
+    }
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -958,6 +1052,10 @@ export const getAllCalendlyEvents = async () => {
       orderBy('createdAt', 'desc')
     );
     const querySnapshot = await getDocs(q);
+    if (!querySnapshot || !querySnapshot.docs) {
+      console.warn('No querySnapshot or docs found for getAllCalendlyEvents');
+      return [];
+    }
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -991,6 +1089,10 @@ export const getCalendlyMeetings = async (userId = null) => {
     }
 
     const querySnapshot = await getDocs(q);
+    if (!querySnapshot || !querySnapshot.docs) {
+      console.warn('No querySnapshot or docs found for getCalendlyMeetings');
+      return [];
+    }
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()

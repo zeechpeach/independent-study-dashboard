@@ -53,7 +53,8 @@ describe('Calendly Integration Functions', () => {
   describe('getCalendlyMeetings', () => {
     test('should export getCalendlyMeetings function', () => {
       expect(typeof getCalendlyMeetings).toBe('function');
-      expect(getCalendlyMeetings.length).toBe(1); // Optional userId parameter
+      // Function uses default parameter (userId = null), so length is 0
+      expect(getCalendlyMeetings.length).toBe(0); // Optional userId parameter with default
     });
 
     test('function should be defined and callable with and without parameters', () => {
@@ -102,7 +103,7 @@ describe('Calendly Integration Functions', () => {
       // Check parameter counts match expected signatures
       expect(firebase.getUserCalendlyEvents.length).toBe(1);
       expect(firebase.getAllCalendlyEvents.length).toBe(0);
-      expect(firebase.getCalendlyMeetings.length).toBe(1);
+      expect(firebase.getCalendlyMeetings.length).toBe(0); // Uses default parameter
       expect(firebase.updateMeetingCalendlySync.length).toBe(2);
     });
   });
