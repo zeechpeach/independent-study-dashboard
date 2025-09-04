@@ -109,6 +109,63 @@ export const meetingsService = {
     const meetingDate = new Date(meeting.scheduledDate);
     
     return meetingDate < now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+  },
+
+  // Mark attendance for a meeting (advisor function)
+  async markAttendance(meetingId, attendanceData) {
+    try {
+      return await updateMeeting(meetingId, {
+        attendanceMarked: true,
+        studentAttended: attendanceData.studentAttended,
+        advisorAttended: attendanceData.advisorAttended || true,
+        attendanceNotes: attendanceData.notes || '',
+        attendanceMarkedAt: new Date().toISOString(),
+        status: attendanceData.studentAttended ? 'completed' : 'no-show'
+      });
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      throw error;
+    }
+  },
+
+  // Add feedback to a meeting (advisor function)
+  async addFeedback(meetingId, feedbackData) {
+    try {
+      return await updateMeeting(meetingId, {
+        advisorFeedback: feedbackData.feedback,
+        actionItems: feedbackData.actionItems || [],
+        nextSteps: feedbackData.nextSteps || '',
+        feedbackAddedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding feedback:', error);
+      throw error;
+    }
+  },
+
+  // Get meetings for an advisor (by advisor name)
+  async getAdvisorMeetings(advisorName) {
+    try {
+      const allMeetings = await getAllMeetings();
+      // Filter meetings where the student's advisor matches
+      // This requires looking up student profiles, but for now we'll use a simpler approach
+      // In a real implementation, we'd need to join with user data
+      return allMeetings.filter(meeting => meeting.advisorName === advisorName);
+    } catch (error) {
+      console.error('Error getting advisor meetings:', error);
+      throw error;
+    }
+  },
+
+  // Get meetings that need attention (for advisors)
+  getMeetingsNeedingAttention(meetings) {
+    const now = new Date();
+    return meetings.filter(meeting => {
+      // Meetings that are overdue or completed but missing feedback
+      return this.isMeetingOverdue(meeting) || 
+             (meeting.status === 'completed' && !meeting.advisorFeedback) ||
+             (meeting.status === 'scheduled' && !meeting.attendanceMarked && new Date(meeting.scheduledDate) < now);
+    });
   }
 };
 

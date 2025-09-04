@@ -9,6 +9,7 @@ import ReflectionModal from './ReflectionModal';
 import QuickActionCard from './QuickActionCard';
 import GoalModal from './GoalModal';
 import MeetingsCard from './MeetingsCard';
+import MeetingCreateModal from './MeetingCreateModal';
 import SegmentedControl from '../ui/SegmentedControl';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
@@ -40,6 +41,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [reflectionType, setReflectionType] = useState('pre-meeting');
   const [editingReflection, setEditingReflection] = useState(null);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
+  const [showMeetingCreateModal, setShowMeetingCreateModal] = useState(false);
   const [goalFilter, setGoalFilter] = useState('all');
 
   // Use the meetings hook for meeting management
@@ -48,6 +50,7 @@ const StudentDashboard = ({ user, userProfile }) => {
     pastMeetings,
     loading: meetingsLoading,
     error: meetingsError,
+    createMeeting,
     formatDate
   } = useMeetings(user?.uid);
 
@@ -221,7 +224,17 @@ const StudentDashboard = ({ user, userProfile }) => {
 
   // Meeting-related handlers
   const handleBookMeeting = () => {
-    setShowCalendlyEmbed(true);
+    setShowMeetingCreateModal(true);
+  };
+
+  const handleCreateMeeting = async (meetingData) => {
+    try {
+      await createMeeting(meetingData);
+      setShowMeetingCreateModal(false);
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+      // Error will be displayed in the modal
+    }
   };
 
   const handlePrepareForMeeting = (meeting) => {
@@ -686,6 +699,14 @@ const StudentDashboard = ({ user, userProfile }) => {
         onClose={() => setShowCalendlyEmbed(false)}
         schedulingLink={getSchedulingLink()}
         userName={user?.displayName}
+      />
+
+      {/* Manual Meeting Create Modal */}
+      <MeetingCreateModal
+        isOpen={showMeetingCreateModal}
+        onClose={() => setShowMeetingCreateModal(false)}
+        onSave={handleCreateMeeting}
+        userProfile={{ id: user?.uid, name: user?.displayName, email: user?.email }}
       />
     </DashboardGrid>
   );
