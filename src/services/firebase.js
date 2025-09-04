@@ -38,6 +38,35 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+/**
+ * Helper function to handle Firebase errors consistently
+ * @param {Error} error - The original error
+ * @param {string} operation - Description of the operation that failed
+ * @returns {Error} - Enhanced error with better message
+ */
+const enhanceFirebaseError = (error, operation) => {
+  let message = `Failed to ${operation}`;
+  
+  if (error.code === 'permission-denied') {
+    message = `Permission denied for ${operation}. Please check your access rights.`;
+  } else if (error.code === 'unavailable') {
+    message = `Service temporarily unavailable for ${operation}. Please check your internet connection and try again.`;
+  } else if (error.code === 'not-found') {
+    message = `Resource not found for ${operation}.`;
+  } else if (error.code === 'already-exists') {
+    message = `Resource already exists for ${operation}.`;
+  } else if (error.code === 'invalid-argument') {
+    message = `Invalid data provided for ${operation}.`;
+  } else if (error.message) {
+    message = error.message;
+  }
+  
+  const enhancedError = new Error(message);
+  enhancedError.originalError = error;
+  enhancedError.operation = operation;
+  return enhancedError;
+};
+
 // Auth functions
 export const googleProvider = new GoogleAuthProvider();
 
@@ -114,12 +143,16 @@ export const logOut = async () => {
 // User functions
 export const getUserProfile = async (uid) => {
   try {
+    if (!uid) {
+      throw new Error('User ID is required');
+    }
+    
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() : null;
   } catch (error) {
     console.error('Error getting user profile:', error);
-    throw error;
+    throw enhanceFirebaseError(error, 'get user profile');
   }
 };
 
@@ -138,6 +171,19 @@ export const updateUserProfile = async (uid, data) => {
 // Onboarding functions
 export const saveUserOnboarding = async (userId, onboardingData) => {
   try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    if (!onboardingData) {
+      throw new Error('Onboarding data is required');
+    }
+    
+    // Validate required onboarding fields
+    if (!onboardingData.userType) {
+      throw new Error('User type is required in onboarding data');
+    }
+    
     await updateDoc(doc(db, 'users', userId), {
       ...onboardingData,
       onboardingComplete: true,
@@ -145,7 +191,7 @@ export const saveUserOnboarding = async (userId, onboardingData) => {
     });
   } catch (error) {
     console.error('Error saving onboarding:', error);
-    throw error;
+    throw enhanceFirebaseError(error, 'save onboarding data');
   }
 };
 
