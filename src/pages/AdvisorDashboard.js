@@ -7,7 +7,7 @@ import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorImportantDatesPanel from '../components/advisor/AdvisorImportantDatesPanel';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
-import CalendlyEventsPanel from '../components/advisor/CalendlyEventsPanel';
+
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData } from '../services/firebase';
 import AdminDashboard from '../components/admin/AdminDashboard';
@@ -263,11 +263,6 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <RecentReflectionsPanel 
             advisorName={advisorName}
             userProfile={userProfile}
-          />
-          <CalendlyEventsPanel 
-            userProfile={userProfile}
-            showAllEvents={false}
-            maxEvents={5}
           />
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>

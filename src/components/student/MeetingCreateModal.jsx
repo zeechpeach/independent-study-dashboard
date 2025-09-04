@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, X, AlertCircle } from 'lucide-react';
 
 /**
- * Modal for creating a new meeting manually
+ * Modal for creating or editing a meeting manually
  */
-const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
+const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeting = null }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -15,6 +15,38 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Initialize form data when editing or when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (editingMeeting) {
+        // Format the date/time from the existing meeting
+        const meetingDate = new Date(editingMeeting.scheduledDate);
+        const formattedDate = meetingDate.toISOString().split('T')[0];
+        const formattedTime = meetingDate.toTimeString().split(' ')[0].slice(0, 5);
+        
+        setFormData({
+          title: editingMeeting.title || '',
+          description: editingMeeting.description || '',
+          scheduledDate: formattedDate,
+          scheduledTime: formattedTime,
+          duration: editingMeeting.duration ? editingMeeting.duration.toString() : '60',
+          meetingLink: editingMeeting.meetingLink || ''
+        });
+      } else {
+        // Reset form for new meeting
+        setFormData({
+          title: '',
+          description: '',
+          scheduledDate: '',
+          scheduledTime: '',
+          duration: '60',
+          meetingLink: ''
+        });
+      }
+      setErrors({});
+    }
+  }, [isOpen, editingMeeting]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -70,7 +102,13 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
         studentEmail: userProfile?.email || ''
       };
       
-      await onSave(meetingData);
+      if (editingMeeting) {
+        // For editing, pass the meeting ID and the updated data
+        await onSave(editingMeeting.id, meetingData);
+      } else {
+        // For creating, just pass the meeting data
+        await onSave(meetingData);
+      }
       
       // Reset form
       setFormData({
@@ -84,8 +122,8 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
       setErrors({});
       onClose();
     } catch (error) {
-      console.error('Error creating meeting:', error);
-      setErrors({ submit: 'Failed to create meeting. Please try again.' });
+      console.error(`Error ${editingMeeting ? 'updating' : 'creating'} meeting:`, error);
+      setErrors({ submit: `Failed to ${editingMeeting ? 'update' : 'create'} meeting. Please try again.` });
     } finally {
       setLoading(false);
     }
@@ -109,7 +147,9 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Schedule New Meeting</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {editingMeeting ? 'Edit Meeting' : 'Schedule New Meeting'}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -244,12 +284,12 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile }) => {
               {loading ? (
                 <>
                   <Clock className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {editingMeeting ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
                 <>
                   <Calendar className="w-4 h-4" />
-                  Schedule Meeting
+                  {editingMeeting ? 'Update Meeting' : 'Schedule Meeting'}
                 </>
               )}
             </button>
