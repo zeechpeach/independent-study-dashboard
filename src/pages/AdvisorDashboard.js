@@ -5,7 +5,6 @@ import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
-import AdvisorImportantDatesPanel from '../components/advisor/AdvisorImportantDatesPanel';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
@@ -255,10 +254,6 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <NeedsAttentionPanel 
             advisorName={advisorName}
             userProfile={userProfile}
-          />
-          <AdvisorImportantDatesPanel
-            userProfile={userProfile}
-            onManageClick={() => setShowImportantDates(true)}
           />
           <RecentReflectionsPanel 
             advisorName={advisorName}
