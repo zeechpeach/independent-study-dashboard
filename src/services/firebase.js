@@ -919,3 +919,102 @@ export const migrateAdvisorPathwaysData = async () => {
     throw error;
   }
 };
+
+// ============================================================================
+// Calendly Integration Functions
+// ============================================================================
+
+/**
+ * Get Calendly events for a specific user
+ * @param {string} userId - User ID to get events for
+ * @returns {Promise<Array>} Array of Calendly events
+ */
+export const getUserCalendlyEvents = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'calendly_events'),
+      where('payload.studentId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting user Calendly events:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all Calendly events (admin function)
+ * @returns {Promise<Array>} Array of all Calendly events
+ */
+export const getAllCalendlyEvents = async () => {
+  try {
+    const q = query(
+      collection(db, 'calendly_events'),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting all Calendly events:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get meetings that originated from Calendly
+ * @param {string} userId - Optional user ID to filter by
+ * @returns {Promise<Array>} Array of Calendly-sourced meetings
+ */
+export const getCalendlyMeetings = async (userId = null) => {
+  try {
+    let q = query(
+      collection(db, 'meetings'),
+      where('source', '==', 'calendly'),
+      orderBy('scheduledDate', 'desc')
+    );
+
+    if (userId) {
+      q = query(
+        collection(db, 'meetings'),
+        where('source', '==', 'calendly'),
+        where('studentId', '==', userId),
+        orderBy('scheduledDate', 'desc')
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting Calendly meetings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a meeting's Calendly synchronization status
+ * @param {string} meetingId - Meeting document ID
+ * @param {Object} syncData - Sync status data
+ */
+export const updateMeetingCalendlySync = async (meetingId, syncData) => {
+  try {
+    await updateDoc(doc(db, 'meetings', meetingId), {
+      ...syncData,
+      lastSyncAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating meeting Calendly sync:', error);
+    throw error;
+  }
+};
