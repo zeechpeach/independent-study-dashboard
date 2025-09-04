@@ -10,7 +10,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
     description: '',
     scheduledDate: '',
     scheduledTime: '',
-    duration: '60', // Default 60 minutes
+    duration: '30', // Default 30 minutes
     meetingLink: ''
   });
   const [errors, setErrors] = useState({});
@@ -30,7 +30,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
           description: editingMeeting.description || '',
           scheduledDate: formattedDate,
           scheduledTime: formattedTime,
-          duration: editingMeeting.duration ? editingMeeting.duration.toString() : '60',
+          duration: editingMeeting.duration ? editingMeeting.duration.toString() : '30',
           meetingLink: editingMeeting.meetingLink || ''
         });
       } else {
@@ -40,7 +40,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
           description: '',
           scheduledDate: '',
           scheduledTime: '',
-          duration: '60',
+          duration: '30',
           meetingLink: ''
         });
       }
@@ -116,7 +116,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
         description: '',
         scheduledDate: '',
         scheduledTime: '',
-        duration: '60',
+        duration: '30',
         meetingLink: ''
       });
       setErrors({});
@@ -244,10 +244,9 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
               value={formData.duration}
               onChange={(e) => handleInputChange('duration', e.target.value)}
             >
+              <option value="15">15 minutes</option>
               <option value="30">30 minutes</option>
               <option value="60">60 minutes</option>
-              <option value="90">90 minutes</option>
-              <option value="120">120 minutes</option>
             </select>
           </div>
 
