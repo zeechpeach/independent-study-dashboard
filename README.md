@@ -9,6 +9,7 @@ A React-based web application for managing independent study programs, built for
 - 📝 **Reflection Forms**: Pre-meeting and post-meeting reflections
 - 🎯 **Goal Tracking**: Set and monitor learning objectives
 - 📅 **Meeting Management**: Book meetings and view history
+- 🔗 **Calendly Integration**: Automatic meeting sync from Calendly webhooks
 - 📋 **Important Dates**: View competitions, deadlines, and events
 - 📊 **Progress Visualization**: Track learning journey over time
 
@@ -16,7 +17,7 @@ A React-based web application for managing independent study programs, built for
 
 - 👥 **Student Overview**: Monitor all students' progress
 - 📈 **Analytics Dashboard**: Track engagement and outcomes
-- 📅 **Calendar Integration**: Manage meetings and scheduling
+- 📅 **Calendar Integration**: Manage meetings and scheduling (including Calendly webhooks)
 - 🗓️ **Important Dates**: Add and manage system-wide dates
 - 📊 **Reporting**: Export data and generate reports
 
@@ -86,6 +87,17 @@ REACT_APP_ADMIN_EMAIL=admin@example.com
 - `REACT_APP_ADMIN_EMAIL`: Email address of the application administrator
 
 **Note:** All environment variables must start with `REACT_APP_` to be accessible in the React application.
+
+### Calendly Integration Setup
+
+For automatic meeting synchronization with Calendly, see the detailed setup guide:
+[Calendly Webhook Integration Setup](docs/calendly-webhook-setup.md)
+
+This includes:
+- Firebase Cloud Functions deployment
+- Calendly webhook configuration  
+- Environment variable setup for Vercel
+- Testing and troubleshooting guides
 
 ## Deployment
 
