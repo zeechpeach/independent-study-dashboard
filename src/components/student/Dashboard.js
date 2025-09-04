@@ -42,6 +42,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [editingReflection, setEditingReflection] = useState(null);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
   const [showMeetingCreateModal, setShowMeetingCreateModal] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState(null);
   const [goalFilter, setGoalFilter] = useState('all');
 
   // Use the meetings hook for meeting management
@@ -51,6 +52,7 @@ const StudentDashboard = ({ user, userProfile }) => {
     loading: meetingsLoading,
     error: meetingsError,
     createMeeting,
+    updateMeeting,
     formatDate
   } = useMeetings(user?.uid);
 
@@ -231,9 +233,36 @@ const StudentDashboard = ({ user, userProfile }) => {
     try {
       await createMeeting(meetingData);
       setShowMeetingCreateModal(false);
+      setEditingMeeting(null);
     } catch (error) {
       console.error('Error creating meeting:', error);
       // Error will be displayed in the modal
+    }
+  };
+
+  const handleEditMeeting = (meeting) => {
+    setEditingMeeting(meeting);
+    setShowMeetingCreateModal(true);
+  };
+
+  const handleUpdateMeeting = async (meetingId, meetingData) => {
+    try {
+      await updateMeeting(meetingId, meetingData);
+      setShowMeetingCreateModal(false);
+      setEditingMeeting(null);
+    } catch (error) {
+      console.error('Error updating meeting:', error);
+      // Error will be displayed in the modal
+    }
+  };
+
+  const handleSaveMeeting = async (meetingIdOrData, meetingData) => {
+    if (editingMeeting) {
+      // Editing mode: first param is meetingId, second is data
+      await handleUpdateMeeting(meetingIdOrData, meetingData);
+    } else {
+      // Creating mode: first param is data
+      await handleCreateMeeting(meetingIdOrData);
     }
   };
 
@@ -608,6 +637,7 @@ const StudentDashboard = ({ user, userProfile }) => {
           onBookMeeting={handleBookMeeting}
           onPrepareForMeeting={handlePrepareForMeeting}
           onJoinMeeting={handleJoinMeeting}
+          onEditMeeting={handleEditMeeting}
           formatDate={formatDate}
         />
 
@@ -704,8 +734,12 @@ const StudentDashboard = ({ user, userProfile }) => {
       {/* Manual Meeting Create Modal */}
       <MeetingCreateModal
         isOpen={showMeetingCreateModal}
-        onClose={() => setShowMeetingCreateModal(false)}
-        onSave={handleCreateMeeting}
+        onClose={() => {
+          setShowMeetingCreateModal(false);
+          setEditingMeeting(null);
+        }}
+        onSave={handleSaveMeeting}
+        editingMeeting={editingMeeting}
         userProfile={{ id: user?.uid, name: user?.displayName, email: user?.email }}
       />
     </DashboardGrid>

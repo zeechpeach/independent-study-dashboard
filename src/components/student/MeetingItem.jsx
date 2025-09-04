@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Calendar, AlertCircle } from 'lucide-react';
+import { Clock, Calendar, AlertCircle, Edit3 } from 'lucide-react';
 
 /**
  * Individual meeting item component
@@ -8,7 +8,8 @@ import { Clock, Calendar, AlertCircle } from 'lucide-react';
 const MeetingItem = ({ 
   meeting, 
   onPrepare, 
-  onJoin, 
+  onJoin,
+  onEdit,
   showPrepareButton = true,
   formatDate 
 }) => {
@@ -98,6 +99,17 @@ const MeetingItem = ({
         </div>
 
         <div className="flex gap-2 ml-3">
+          {/* Show edit button for upcoming meetings */}
+          {!isOverdue() && meeting.status !== 'completed' && meeting.status !== 'cancelled' && onEdit && (
+            <button
+              onClick={() => onEdit(meeting)}
+              className="btn btn-sm btn-secondary"
+              title="Edit meeting"
+            >
+              <Edit3 className="w-3 h-3" />
+            </button>
+          )}
+
           {/* Show prepare button for upcoming meetings */}
           {showPrepareButton && !isOverdue() && meeting.status !== 'completed' && onPrepare && (
             <button

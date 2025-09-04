@@ -14,6 +14,7 @@ const MeetingsCard = ({
   onBookMeeting,
   onPrepareForMeeting,
   onJoinMeeting,
+  onEditMeeting,
   formatDate,
   className = ''
 }) => {
@@ -104,6 +105,7 @@ const MeetingsCard = ({
                   meeting={meeting}
                   onPrepare={onPrepareForMeeting}
                   onJoin={onJoinMeeting}
+                  onEdit={onEditMeeting}
                   formatDate={formatDate}
                   showPrepareButton={true}
                 />
