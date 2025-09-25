@@ -26,7 +26,9 @@ export const roleConfigs: Record<UserRole, RoleConfig> = {
       'create_reflections',
       'manage_goals',
       'book_meetings',
-      'view_assignments'
+      'view_assignments',
+      'log_meetings',
+      'view_meeting_history'
     ]
   },
   advisor: {

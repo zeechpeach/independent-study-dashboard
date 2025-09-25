@@ -98,13 +98,18 @@ export const signInWithGoogle = async () => {
       // Validate admin email configuration
       const isAdmin = user.email === process.env.REACT_APP_ADMIN_EMAIL;
       
+      // Auto-assign advisor role to zeechpeach user
+      const isZeechpeachUser = user.email === 'zchien@bwscampus.com';
+      
       // New user, create basic profile (onboarding will complete it)
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         name: user.displayName || user.email.split('@')[0], // Fallback to email prefix if no displayName
         photoURL: user.photoURL || null,
         isAdmin: isAdmin,
-        onboardingComplete: false, // Explicitly set to false for new users
+        // Auto-assign advisor role to zeechpeach user, all others default to student
+        userType: isZeechpeachUser ? 'advisor' : 'student',
+        onboardingComplete: isZeechpeachUser, // zeechpeach skips onboarding, others need it
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp()
       });
@@ -179,16 +184,26 @@ export const saveUserOnboarding = async (userId, onboardingData) => {
       throw new Error('Onboarding data is required');
     }
     
-    // Validate required onboarding fields
-    if (!onboardingData.userType) {
-      throw new Error('User type is required in onboarding data');
+    // Get user profile to check if they're zeechpeach
+    const userProfile = await getUserProfile(userId);
+    const isZeechpeachUser = userProfile?.email === 'zchien@bwscampus.com';
+    
+    // For zeechpeach user, skip onboarding as they're auto-assigned as advisor
+    if (isZeechpeachUser) {
+      return;
     }
     
-    await updateDoc(doc(db, 'users', userId), {
-      ...onboardingData,
+    // For all other users (students), only require project description
+    // Auto-assign zeechpeach as their advisor
+    const studentOnboardingData = {
+      userType: 'student',
+      advisor: 'zchien@bwscampus.com', // Auto-assign zeechpeach as advisor
+      projectDescription: onboardingData.projectDescription,
       onboardingComplete: true,
       updatedAt: serverTimestamp()
-    });
+    };
+    
+    await updateDoc(doc(db, 'users', userId), studentOnboardingData);
   } catch (error) {
     console.error('Error saving onboarding:', error);
     throw enhanceFirebaseError(error, 'save onboarding data');
