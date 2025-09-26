@@ -6,7 +6,7 @@ import { getStudentsByAdvisor } from '../../services/firebase';
 /**
  * Component for advisors to manage meetings - mark attendance and provide feedback
  */
-const AdvisorMeetingsPanel = ({ advisorName, userProfile }) => {
+const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
   const [meetings, setMeetings] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const AdvisorMeetingsPanel = ({ advisorName, userProfile }) => {
       setError(null);
 
       // Get students assigned to this advisor
-      const studentsData = await getStudentsByAdvisor(advisorName);
+      const studentsData = await getStudentsByAdvisor(advisorEmail);
       setStudents(studentsData);
 
       // Get all meetings and filter for our students
@@ -38,7 +38,7 @@ const AdvisorMeetingsPanel = ({ advisorName, userProfile }) => {
     } finally {
       setLoading(false);
     }
-  }, [advisorName]);
+  }, [advisorEmail]);
 
   useEffect(() => {
     fetchData();
@@ -49,7 +49,7 @@ const AdvisorMeetingsPanel = ({ advisorName, userProfile }) => {
       await meetingsService.markAttendance(meeting.id, {
         studentAttended: attended,
         advisorAttended: true,
-        notes: `Attendance marked by ${advisorName}`
+        notes: `Attendance marked by ${userProfile?.name || advisorEmail}`
       });
       
       // Refresh data

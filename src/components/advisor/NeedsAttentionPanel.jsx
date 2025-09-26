@@ -8,17 +8,17 @@ import { getStudentsNeedingAttention } from '../../services/firebase';
  * Phase 3B: Now uses dynamic data from Firebase to show real students
  * who need attention based on missing reflections, overdue goals, etc.
  */
-const NeedsAttentionPanel = ({ className = '', advisorName, userProfile }) => {
+const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile }) => {
   const [studentsNeedingAttention, setStudentsNeedingAttention] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get advisor name from userProfile if not provided directly
-  const actualAdvisorName = advisorName || userProfile?.name;
+  // Get advisor email from userProfile if not provided directly
+  const actualAdvisorEmail = advisorEmail || userProfile?.email;
 
   useEffect(() => {
     const fetchStudentsNeedingAttention = async () => {
-      if (!actualAdvisorName) {
+      if (!actualAdvisorEmail) {
         setLoading(false);
         return;
       }
@@ -26,7 +26,7 @@ const NeedsAttentionPanel = ({ className = '', advisorName, userProfile }) => {
       try {
         setLoading(true);
         setError(null);
-        const students = await getStudentsNeedingAttention(actualAdvisorName);
+        const students = await getStudentsNeedingAttention(actualAdvisorEmail);
         
         // Transform the data to match the expected format
         const transformedStudents = students.map(student => ({
@@ -49,7 +49,7 @@ const NeedsAttentionPanel = ({ className = '', advisorName, userProfile }) => {
     };
 
     fetchStudentsNeedingAttention();
-  }, [actualAdvisorName]);
+  }, [actualAdvisorEmail]);
 
   const determinePriority = (student) => {
     // High priority: multiple issues or >7 days since reflection

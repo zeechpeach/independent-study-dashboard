@@ -9,17 +9,17 @@ import { getStudentsByAdvisor, getUserGoals } from '../../services/firebase';
  * Phase 3B: Now uses real Firebase data to show students assigned to the advisor
  * with actual goal counts and activity information.
  */
-const AdvisorStudentList = ({ onBack, advisorName, userProfile }) => {
+const AdvisorStudentList = ({ onBack, advisorEmail, userProfile }) => {
   const [studentsWithGoals, setStudentsWithGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get advisor name from userProfile if not provided directly
-  const actualAdvisorName = advisorName || userProfile?.name;
+  // Get advisor email from userProfile if not provided directly
+  const actualAdvisorEmail = advisorEmail || userProfile?.email;
 
   useEffect(() => {
     const fetchStudentsAndGoals = async () => {
-      if (!actualAdvisorName) {
+      if (!actualAdvisorEmail) {
         setLoading(false);
         setError('No advisor information available');
         return;
@@ -30,7 +30,7 @@ const AdvisorStudentList = ({ onBack, advisorName, userProfile }) => {
         setError(null);
         
         // Get all students assigned to this advisor
-        const assignedStudents = await getStudentsByAdvisor(actualAdvisorName);
+        const assignedStudents = await getStudentsByAdvisor(actualAdvisorEmail);
 
         // Get goals for each student
         const studentsWithGoalData = await Promise.all(
@@ -88,7 +88,7 @@ const AdvisorStudentList = ({ onBack, advisorName, userProfile }) => {
     };
 
     fetchStudentsAndGoals();
-  }, [actualAdvisorName]);
+  }, [actualAdvisorEmail]);
 
   if (loading) {
     return (

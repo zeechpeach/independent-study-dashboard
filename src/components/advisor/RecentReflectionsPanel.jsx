@@ -8,17 +8,17 @@ import { getRecentReflectionsByAdvisor } from '../../services/firebase';
  * Phase 3B: Now uses dynamic data from Firebase to show real student reflections
  * submitted by students assigned to this advisor.
  */
-const RecentReflectionsPanel = ({ className = '', advisorName, userProfile }) => {
+const RecentReflectionsPanel = ({ className = '', advisorEmail, userProfile }) => {
   const [recentReflections, setRecentReflections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get advisor name from userProfile if not provided directly
-  const actualAdvisorName = advisorName || userProfile?.name;
+  // Get advisor email from userProfile if not provided directly
+  const actualAdvisorEmail = advisorEmail || userProfile?.email;
 
   useEffect(() => {
     const fetchRecentReflections = async () => {
-      if (!actualAdvisorName) {
+      if (!actualAdvisorEmail) {
         setLoading(false);
         return;
       }
@@ -26,7 +26,7 @@ const RecentReflectionsPanel = ({ className = '', advisorName, userProfile }) =>
       try {
         setLoading(true);
         setError(null);
-        const reflections = await getRecentReflectionsByAdvisor(actualAdvisorName, 10);
+        const reflections = await getRecentReflectionsByAdvisor(actualAdvisorEmail, 10);
         
         // Transform the data to match the expected format
         const transformedReflections = reflections.map(reflection => ({
@@ -51,7 +51,7 @@ const RecentReflectionsPanel = ({ className = '', advisorName, userProfile }) =>
     };
 
     fetchRecentReflections();
-  }, [actualAdvisorName]);
+  }, [actualAdvisorEmail]);
 
   const getTypeColor = (type) => {
     switch (type) {
