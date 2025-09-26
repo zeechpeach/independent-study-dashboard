@@ -48,15 +48,17 @@ const enhanceFirebaseError = (error, operation) => {
   let message = `Failed to ${operation}`;
   
   if (error.code === 'permission-denied') {
-    message = `Permission denied for ${operation}. Please check your access rights.`;
+    message = `Permission denied for ${operation}. This may be due to missing user profile data or insufficient permissions. Please ensure you are signed in with a @bwscampus.com email address and your profile is complete.`;
   } else if (error.code === 'unavailable') {
     message = `Service temporarily unavailable for ${operation}. Please check your internet connection and try again.`;
   } else if (error.code === 'not-found') {
-    message = `Resource not found for ${operation}.`;
+    message = `Resource not found for ${operation}. This might be due to permission restrictions.`;
   } else if (error.code === 'already-exists') {
     message = `Resource already exists for ${operation}.`;
   } else if (error.code === 'invalid-argument') {
     message = `Invalid data provided for ${operation}.`;
+  } else if (error.code === 'unauthenticated') {
+    message = `Authentication required for ${operation}. Please sign in and try again.`;
   } else if (error.message) {
     message = error.message;
   }
@@ -101,7 +103,7 @@ export const signInWithGoogle = async () => {
       // Auto-assign advisor role to zeechpeach user
       const isZeechpeachUser = user.email === 'zchien@bwscampus.com';
       
-      // New user, create basic profile (onboarding will complete it)
+      // New user, create complete profile to avoid missing field errors
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         name: user.displayName || user.email.split('@')[0], // Fallback to email prefix if no displayName
@@ -110,6 +112,9 @@ export const signInWithGoogle = async () => {
         // Auto-assign advisor role to zeechpeach user, all others default to student
         userType: isZeechpeachUser ? 'advisor' : 'student',
         onboardingComplete: isZeechpeachUser, // zeechpeach skips onboarding, others need it
+        // Ensure all required fields are present to prevent permission errors
+        advisor: isZeechpeachUser ? null : 'zchien@bwscampus.com',
+        projectDescription: isZeechpeachUser ? 'Advisor account' : null,
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp()
       });
@@ -154,9 +159,30 @@ export const getUserProfile = async (uid) => {
     
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? docSnap.data() : null;
+    
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+      
+      // Ensure required fields are present to prevent permission errors
+      return {
+        userType: 'student', // Default fallback
+        isAdmin: false, // Default fallback  
+        onboardingComplete: false, // Default fallback
+        ...userData, // Override with actual data
+        id: uid, // Ensure id is always present
+        uid: uid // Ensure uid is always present for compatibility
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error getting user profile:', error);
+    
+    // Provide better error messages for permission issues
+    if (error.code === 'permission-denied') {
+      throw new Error('Permission denied when accessing user profile. Please ensure you are properly signed in and have the necessary permissions.');
+    }
+    
     throw enhanceFirebaseError(error, 'get user profile');
   }
 };
@@ -193,13 +219,15 @@ export const saveUserOnboarding = async (userId, onboardingData) => {
       return;
     }
     
-    // For all other users (students), only require project description
+    // For all other users (students), ensure all required fields are present
     // Auto-assign zeechpeach as their advisor
     const studentOnboardingData = {
-      userType: 'student',
+      userType: 'student', // Always assign student role
       advisor: 'zchien@bwscampus.com', // Auto-assign zeechpeach as advisor
-      projectDescription: onboardingData.projectDescription,
+      projectDescription: onboardingData.projectDescription || 'Not specified',
       onboardingComplete: true,
+      // Ensure all required fields that might be checked by security rules
+      isAdmin: false,
       updatedAt: serverTimestamp()
     };
     
