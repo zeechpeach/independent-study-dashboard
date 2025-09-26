@@ -166,6 +166,71 @@ export const meetingsService = {
              (meeting.status === 'completed' && !meeting.advisorFeedback) ||
              (meeting.status === 'scheduled' && !meeting.attendanceMarked && new Date(meeting.scheduledDate) < now);
     });
+  },
+
+  // Auto-mark meetings as missed when they pass their scheduled time
+  markOverdueMeetingsAsMissed(meetings) {
+    const now = new Date();
+    return meetings.map(meeting => {
+      // If meeting is past its scheduled time and still in 'scheduled' status
+      if (meeting.status === 'scheduled' && new Date(meeting.scheduledDate) < now) {
+        return {
+          ...meeting,
+          status: 'missed',
+          autoMarkedAt: new Date().toISOString()
+        };
+      }
+      return meeting;
+    });
+  },
+
+  // Mark student attendance for a meeting (student self-reporting)
+  async markStudentAttendance(meetingId, attendanceStatus) {
+    try {
+      const now = new Date().toISOString();
+      return await updateMeeting(meetingId, {
+        status: attendanceStatus, // 'completed' or 'missed'
+        studentSelfReported: true,
+        studentAttendanceMarkedAt: now,
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error('Error marking student attendance:', error);
+      throw error;
+    }
+  },
+
+  // Get meeting attendance counts for a student
+  getMeetingAttendanceCounts(meetings) {
+    const counts = {
+      total: meetings.length,
+      completed: 0,
+      missed: 0,
+      scheduled: 0,
+      cancelled: 0
+    };
+
+    meetings.forEach(meeting => {
+      switch (meeting.status) {
+        case 'completed':
+          counts.completed++;
+          break;
+        case 'missed':
+        case 'no-show':
+          counts.missed++;
+          break;
+        case 'scheduled':
+          counts.scheduled++;
+          break;
+        case 'cancelled':
+          counts.cancelled++;
+          break;
+        default:
+          break;
+      }
+    });
+
+    return counts;
   }
 };
 

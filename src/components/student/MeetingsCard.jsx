@@ -9,12 +9,14 @@ import MeetingItem from './MeetingItem';
 const MeetingsCard = ({ 
   upcomingMeetings = [],
   pastMeetings = [],
+  attendanceCounts = {},
   loading = false,
   error = null,
   onBookMeeting,
   onPrepareForMeeting,
   onJoinMeeting,
   onEditMeeting,
+  onMarkAttendance,
   formatDate,
   className = ''
 }) => {
@@ -83,6 +85,17 @@ const MeetingsCard = ({
               {upcomingMeetings.length}
             </span>
           )}
+          {/* Show attendance counts if available */}
+          {attendanceCounts.total > 0 && (
+            <div className="flex gap-1 ml-2">
+              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full" title="Completed meetings">
+                ✓{attendanceCounts.completed || 0}
+              </span>
+              <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full" title="Missed meetings">
+                ✗{attendanceCounts.missed || 0}
+              </span>
+            </div>
+          )}
         </div>
         <button 
           onClick={onBookMeeting}
@@ -106,6 +119,7 @@ const MeetingsCard = ({
                   onPrepare={onPrepareForMeeting}
                   onJoin={onJoinMeeting}
                   onEdit={onEditMeeting}
+                  onMarkAttendance={onMarkAttendance}
                   formatDate={formatDate}
                   showPrepareButton={true}
                 />
@@ -152,6 +166,7 @@ const MeetingsCard = ({
                   <MeetingItem
                     key={meeting.id || index}
                     meeting={meeting}
+                    onMarkAttendance={onMarkAttendance}
                     formatDate={formatDate}
                     showPrepareButton={false}
                   />
