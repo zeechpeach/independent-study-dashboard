@@ -8,7 +8,7 @@ import { getRecentReflectionsByAdvisor } from '../../services/firebase';
  * Phase 3B: Now uses dynamic data from Firebase to show real student reflections
  * submitted by students assigned to this advisor.
  */
-const RecentReflectionsPanel = ({ className = '', advisorEmail, userProfile }) => {
+const RecentReflectionsPanel = ({ className = '', advisorEmail, userProfile, onReflectionClick, onViewAllClick }) => {
   const [recentReflections, setRecentReflections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -142,6 +142,7 @@ const RecentReflectionsPanel = ({ className = '', advisorEmail, userProfile }) =
                 ? 'border-blue-200 bg-blue-50' 
                 : 'border-gray-200 bg-white'
             }`}
+            onClick={() => onReflectionClick && onReflectionClick(reflection)}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -194,7 +195,10 @@ const RecentReflectionsPanel = ({ className = '', advisorEmail, userProfile }) =
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <button className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium">
+        <button 
+          onClick={() => onViewAllClick && onViewAllClick()}
+          className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
+        >
           View All Reflections
         </button>
       </div>
