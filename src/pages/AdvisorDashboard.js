@@ -6,6 +6,9 @@ import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
+import AdvisorAllReflections from '../components/advisor/AdvisorAllReflections';
+import AdvisorProgressReports from '../components/advisor/AdvisorProgressReports';
+import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData } from '../services/firebase';
@@ -21,6 +24,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [showStudentList, setShowStudentList] = useState(false);
   const [showImportantDates, setShowImportantDates] = useState(false);
+  const [showAllReflections, setShowAllReflections] = useState(false);
+  const [showProgressReports, setShowProgressReports] = useState(false);
+  const [showStudentDetail, setShowStudentDetail] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [error, setError] = useState(null);
   
@@ -112,6 +119,43 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
+  // Show all reflections if requested
+  if (showAllReflections) {
+    return (
+      <AdvisorAllReflections
+        advisorEmail={advisorEmail}
+        userProfile={userProfile}
+        onBack={() => setShowAllReflections(false)}
+      />
+    );
+  }
+
+  // Show progress reports if requested
+  if (showProgressReports) {
+    return (
+      <AdvisorProgressReports
+        advisorEmail={advisorEmail}
+        userProfile={userProfile}
+        onBack={() => setShowProgressReports(false)}
+      />
+    );
+  }
+
+  // Show student detail if requested
+  if (showStudentDetail && selectedStudent) {
+    return (
+      <AdvisorStudentDetail
+        studentId={selectedStudent.id}
+        studentName={selectedStudent.name}
+        studentEmail={selectedStudent.email}
+        onBack={() => {
+          setShowStudentDetail(false);
+          setSelectedStudent(null);
+        }}
+      />
+    );
+  }
+
   const statsData = dashboardData || {
     totalStudents: 0,
     activeStudents: 0,
@@ -119,6 +163,25 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     pendingReflections: 0,
     activeGoals: 0,
     overdueItems: 0
+  };
+
+  // Click handlers for panels
+  const handleStudentClick = (student) => {
+    setSelectedStudent(student);
+    setShowStudentDetail(true);
+  };
+
+  const handleReflectionClick = (reflection) => {
+    // For now, just show an alert. In future this could open a reflection detail modal
+    alert(`Opening reflection by ${reflection.studentName}: ${reflection.title}`);
+  };
+
+  const handleViewAllReflections = () => {
+    setShowAllReflections(true);
+  };
+
+  const handleViewAllStudentIssues = () => {
+    setShowStudentList(true);
   };
 
   return (
@@ -188,7 +251,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                 )}
               </button>
 
-              <button className="btn btn-secondary">
+              <button 
+                onClick={() => setShowAllReflections(true)}
+                className="btn btn-secondary"
+              >
                 <BookOpen className="w-4 h-4" />
                 Review Reflections
               </button>
@@ -199,7 +265,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                 <Calendar className="w-4 h-4" />
                 Important Dates
               </button>
-              <button className="btn btn-secondary">
+              <button 
+                onClick={() => setShowProgressReports(true)}
+                className="btn btn-secondary"
+              >
                 <TrendingUp className="w-4 h-4" />
                 Progress Reports
               </button>
@@ -254,10 +323,14 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <NeedsAttentionPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}
+            onStudentClick={handleStudentClick}
+            onViewAllClick={handleViewAllStudentIssues}
           />
           <RecentReflectionsPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}
+            onReflectionClick={handleReflectionClick}
+            onViewAllClick={handleViewAllReflections}
           />
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>

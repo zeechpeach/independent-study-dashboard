@@ -8,7 +8,7 @@ import { getStudentsNeedingAttention } from '../../services/firebase';
  * Phase 3B: Now uses dynamic data from Firebase to show real students
  * who need attention based on missing reflections, overdue goals, etc.
  */
-const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile }) => {
+const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStudentClick, onViewAllClick }) => {
   const [studentsNeedingAttention, setStudentsNeedingAttention] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -147,7 +147,10 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile }) => {
                   </div>
                 )}
               </div>
-              <button className="text-xs bg-white text-gray-700 border border-gray-300 px-2 py-1 rounded hover:bg-gray-50">
+              <button 
+                onClick={() => onStudentClick && onStudentClick(student)}
+                className="text-xs bg-white text-gray-700 border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
+              >
                 View
               </button>
             </div>
@@ -163,7 +166,10 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile }) => {
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <button className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium">
+        <button 
+          onClick={() => onViewAllClick && onViewAllClick()}
+          className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
+        >
           View All Student Issues
         </button>
       </div>
