@@ -28,12 +28,12 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const useNewLayout = isAdvisorLayoutV2Enabled();
   const isStudentListEnabled = isAdvisorStudentListPreviewEnabled();
 
-  // Get advisor name for data queries
-  const advisorName = userProfile?.name;
+  // Get advisor email for data queries (students are assigned by email, not name)
+  const advisorEmail = userProfile?.email;
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!advisorName) {
+      if (!advisorEmail) {
         setLoading(false);
         setError('No advisor information available');
         return;
@@ -42,7 +42,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getAdvisorDashboardData(advisorName);
+        const data = await getAdvisorDashboardData(advisorEmail);
         setDashboardData(data);
       } catch (err) {
         console.error('Error fetching advisor dashboard data:', err);
@@ -67,7 +67,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [advisorName]);
+  }, [advisorEmail]);
 
   // Fallback to legacy admin dashboard if feature flag is disabled
   if (!useNewLayout) {
@@ -96,7 +96,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     return (
       <AdvisorStudentList
         onBack={() => setShowStudentList(false)}
-        advisorName={advisorName}
+        advisorEmail={advisorEmail}
         userProfile={userProfile}
       />
     );
@@ -245,18 +245,18 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
 
           {/* Meeting Management */}
           <AdvisorMeetingsPanel
-            advisorName={advisorName}
+            advisorEmail={advisorEmail}
             userProfile={userProfile}
           />
         </AdvisorDashboardGrid.Main>
 
         <AdvisorDashboardGrid.Sidebar>
           <NeedsAttentionPanel 
-            advisorName={advisorName}
+            advisorEmail={advisorEmail}
             userProfile={userProfile}
           />
           <RecentReflectionsPanel 
-            advisorName={advisorName}
+            advisorEmail={advisorEmail}
             userProfile={userProfile}
           />
         </AdvisorDashboardGrid.Sidebar>
