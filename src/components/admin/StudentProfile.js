@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, BookOpen, Target, Calendar, Clock, MessageSquare } from 'lucide-react';
+import { ArrowLeft, User, BookOpen, Target, Calendar, Clock, MessageSquare, AlertCircle, TrendingUp } from 'lucide-react';
 import { getUserGoals, getUserReflections, getUserMeetings } from '../../services/firebase';
 
 const StudentProfile = ({ student, onBack }) => {
@@ -56,8 +56,27 @@ const StudentProfile = ({ student, onBack }) => {
   };
 
   const getCompletedMeetings = () => {
+    return meetings.filter(meeting => meeting.status === 'completed');
+  };
+
+  const getMissedMeetings = () => {
+    return meetings.filter(meeting => 
+      meeting.status === 'missed' || meeting.status === 'no-show'
+    );
+  };
+
+  const getPastMeetings = () => {
     const today = new Date();
     return meetings.filter(meeting => new Date(meeting.scheduledDate) < today);
+  };
+
+  const getMeetingAttendanceRate = () => {
+    const completed = getCompletedMeetings().length;
+    const missed = getMissedMeetings().length;
+    const total = completed + missed;
+    
+    if (total === 0) return 0;
+    return Math.round((completed / total) * 100);
   };
 
   const getRecentReflections = () => {
@@ -131,7 +150,7 @@ const StudentProfile = ({ student, onBack }) => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-4 gap-4">
+      <div className="grid grid-5 gap-4">
         <div className="card p-4 text-center">
           <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
             <Target className="w-5 h-5 text-green-600" />
@@ -154,6 +173,22 @@ const StudentProfile = ({ student, onBack }) => {
           </div>
           <div className="text-2xl font-bold text-gray-900">{getCompletedMeetings().length}</div>
           <div className="text-sm text-gray-600">Completed Meetings</div>
+        </div>
+        
+        <div className="card p-4 text-center">
+          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="text-2xl font-bold text-gray-900">{getMissedMeetings().length}</div>
+          <div className="text-sm text-gray-600">Missed Meetings</div>
+        </div>
+        
+        <div className="card p-4 text-center">
+          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <TrendingUp className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="text-2xl font-bold text-gray-900">{getMeetingAttendanceRate()}%</div>
+          <div className="text-sm text-gray-600">Attendance Rate</div>
         </div>
         
         <div className="card p-4 text-center">

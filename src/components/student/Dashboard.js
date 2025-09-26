@@ -49,10 +49,12 @@ const StudentDashboard = ({ user, userProfile }) => {
   const {
     upcomingMeetings,
     pastMeetings,
+    attendanceCounts,
     loading: meetingsLoading,
     error: meetingsError,
     createMeeting,
     updateMeeting,
+    markStudentAttendance,
     formatDate
   } = useMeetings(user?.uid);
 
@@ -632,12 +634,14 @@ const StudentDashboard = ({ user, userProfile }) => {
         <MeetingsCard
           upcomingMeetings={upcomingMeetings}
           pastMeetings={pastMeetings}
+          attendanceCounts={attendanceCounts}
           loading={meetingsLoading}
           error={meetingsError}
           onBookMeeting={handleBookMeeting}
           onPrepareForMeeting={handlePrepareForMeeting}
           onJoinMeeting={handleJoinMeeting}
           onEditMeeting={handleEditMeeting}
+          onMarkAttendance={markStudentAttendance}
           formatDate={formatDate}
         />
 

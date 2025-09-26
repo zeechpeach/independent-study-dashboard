@@ -18,7 +18,24 @@ export const useMeetings = (userId) => {
       setLoading(true);
       setError(null);
       const userMeetings = await meetingsService.getUserMeetings(userId);
-      setMeetings(userMeetings);
+      
+      // Auto-mark overdue meetings as missed
+      const updatedMeetings = meetingsService.markOverdueMeetingsAsMissed(userMeetings);
+      
+      // Update any meetings that changed status
+      for (const meeting of updatedMeetings) {
+        if (meeting.status === 'missed' && !meeting.autoMarkedAt) continue; // Skip if not newly marked
+        if (meeting.status === 'missed' && meeting.autoMarkedAt && 
+            !userMeetings.find(m => m.id === meeting.id && m.status === 'missed')) {
+          // This meeting was just marked as missed, update in database
+          await meetingsService.updateMeeting(meeting.id, {
+            status: 'missed',
+            autoMarkedAt: meeting.autoMarkedAt
+          });
+        }
+      }
+      
+      setMeetings(updatedMeetings);
     } catch (err) {
       console.error('Error fetching meetings:', err);
       setError('Failed to load meetings');
@@ -102,6 +119,23 @@ export const useMeetings = (userId) => {
     return fetchMeetings();
   }, [fetchMeetings]);
 
+  // Mark student attendance (self-reporting)
+  const markStudentAttendance = useCallback(async (meetingId, attendanceStatus) => {
+    try {
+      await meetingsService.markStudentAttendance(meetingId, attendanceStatus);
+      // Refresh meetings to get updated data
+      await fetchMeetings();
+    } catch (error) {
+      console.error('Error marking student attendance:', error);
+      throw error;
+    }
+  }, [fetchMeetings]);
+
+  // Get attendance counts
+  const getAttendanceCounts = useCallback(() => {
+    return meetingsService.getMeetingAttendanceCounts(meetings);
+  }, [meetings]);
+
   return {
     // State
     meetings,
@@ -112,12 +146,14 @@ export const useMeetings = (userId) => {
     createMeeting,
     updateMeeting,
     refreshMeetings,
+    markStudentAttendance,
 
     // Computed data
     upcomingMeetings: getUpcomingMeetings(),
     pastMeetings: getPastMeetings(),
     todaysMeetings: getTodaysMeetings(),
     meetingCounts: getMeetingCounts(),
+    attendanceCounts: getAttendanceCounts(),
 
     // Utilities
     formatDate: meetingsService.formatMeetingDate,

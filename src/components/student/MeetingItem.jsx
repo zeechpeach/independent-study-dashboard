@@ -1,5 +1,5 @@
-import React from 'react';
-import { Clock, Calendar, AlertCircle, Edit3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Calendar, AlertCircle, Edit3, CheckCircle, XCircle } from 'lucide-react';
 
 /**
  * Individual meeting item component
@@ -10,9 +10,11 @@ const MeetingItem = ({
   onPrepare, 
   onJoin,
   onEdit,
+  onMarkAttendance,
   showPrepareButton = true,
   formatDate 
 }) => {
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
   const isToday = () => {
     const today = new Date();
     const meetingDate = new Date(meeting.scheduledDate);
@@ -22,7 +24,19 @@ const MeetingItem = ({
   const isOverdue = () => {
     const now = new Date();
     const meetingDate = new Date(meeting.scheduledDate);
-    return meetingDate < now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+    return meetingDate < now && meeting.status === 'scheduled';
+  };
+
+  const isPastMeeting = () => {
+    const now = new Date();
+    const meetingDate = new Date(meeting.scheduledDate);
+    return meetingDate < now;
+  };
+
+  const canMarkAttendance = () => {
+    return isPastMeeting() && 
+           (meeting.status === 'scheduled' || meeting.status === 'missed') &&
+           !meeting.studentSelfReported;
   };
 
   const getStatusBadge = () => {
@@ -32,6 +46,9 @@ const MeetingItem = ({
     if (meeting.status === 'cancelled') {
       return <span className="status status-error">Cancelled</span>;
     }
+    if (meeting.status === 'missed' || meeting.status === 'no-show') {
+      return <span className="status status-error">Missed</span>;
+    }
     if (isOverdue()) {
       return <span className="status status-error">Missed</span>;
     }
@@ -39,6 +56,20 @@ const MeetingItem = ({
       return <span className="status status-warning">Today</span>;
     }
     return <span className="status status-info">Scheduled</span>;
+  };
+
+  const handleMarkAttendance = async (status) => {
+    if (!onMarkAttendance || isMarkingAttendance) return;
+    
+    setIsMarkingAttendance(true);
+    try {
+      await onMarkAttendance(meeting.id, status);
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      // Error handling could be improved with user feedback
+    } finally {
+      setIsMarkingAttendance(false);
+    }
   };
 
   const getTimeUntilMeeting = () => {
@@ -90,17 +121,53 @@ const MeetingItem = ({
             </p>
           )}
 
-          {isOverdue() && (
+          {(isOverdue() || meeting.status === 'missed') && !meeting.studentSelfReported && (
             <div className="flex items-center gap-1 mt-2 text-xs text-red-600">
               <AlertCircle className="w-3 h-3" />
-              <span>This meeting was missed</span>
+              <span>This meeting was missed - please mark your attendance</span>
+            </div>
+          )}
+
+          {/* Student attendance self-reporting for past meetings */}
+          {canMarkAttendance() && (
+            <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-700 mb-2 font-medium">
+                Did you attend this meeting?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleMarkAttendance('completed')}
+                  disabled={isMarkingAttendance}
+                  className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-medium hover:bg-green-200 transition-colors disabled:opacity-50"
+                  title="Mark as attended"
+                >
+                  <CheckCircle className="w-3 h-3" />
+                  {isMarkingAttendance ? 'Saving...' : 'Yes, I attended'}
+                </button>
+                <button
+                  onClick={() => handleMarkAttendance('missed')}
+                  disabled={isMarkingAttendance}
+                  className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
+                  title="Mark as missed"
+                >
+                  <XCircle className="w-3 h-3" />
+                  {isMarkingAttendance ? 'Saving...' : 'No, I missed it'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {meeting.studentSelfReported && isPastMeeting() && (
+            <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              <span>You marked this meeting as {meeting.status}</span>
             </div>
           )}
         </div>
 
         <div className="flex gap-2 ml-3">
           {/* Show edit button for upcoming meetings */}
-          {!isOverdue() && meeting.status !== 'completed' && meeting.status !== 'cancelled' && onEdit && (
+          {!isPastMeeting() && meeting.status !== 'completed' && meeting.status !== 'cancelled' && onEdit && (
             <button
               onClick={() => onEdit(meeting)}
               className="btn btn-sm btn-secondary"
@@ -111,7 +178,7 @@ const MeetingItem = ({
           )}
 
           {/* Show prepare button for upcoming meetings */}
-          {showPrepareButton && !isOverdue() && meeting.status !== 'completed' && onPrepare && (
+          {showPrepareButton && !isPastMeeting() && meeting.status !== 'completed' && onPrepare && (
             <button
               onClick={() => onPrepare(meeting)}
               className="btn btn-sm btn-primary"
