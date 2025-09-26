@@ -2,54 +2,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
-    function isAdmin() { return isSignedIn() && userDoc().data.isAdmin == true; }
-    function isAdvisor() { return isSignedIn() && userDoc().data.userType == 'advisor'; }
+    function isZeechAdvisor() { return isSignedIn() && request.auth.token.email == 'zchien@bwscampus.com'; }
+    function isAdmin() { return isSignedIn() && request.auth.token.email == 'zchien@bwscampus.com'; }
     
-    // Student assigned to advisor check (optional; fallback to UI filtering)
-    // Requires each student user doc to store advisorId or advisors array of IDs
-    function hasAdvisor(advisorId) {
-      return advisorId == null || // global dates
-             (advisorId == request.auth.uid) || // own advisor dates
-             (advisorId in userDoc().data.advisors) || // multi-advisor assignment
-             (userDoc().data.advisorId == advisorId); // single advisor assignment
+    // Simplified advisor access check - zeech gets full access, others filtered by ownership
+    function hasAdvisorAccess(userId) {
+      return isZeechAdvisor() || request.auth.uid == userId;
     }
     
-    // Users collection - allow read access for authenticated users, write for admins and self
+    // Users collection - advisor can read all, others read their own and write self
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || request.auth.uid == userId;
+      allow read: if isSignedIn() && (isZeechAdvisor() || request.auth.uid == userId);
+      allow write: if isZeechAdvisor() || request.auth.uid == userId;
     }
     
-    // Important dates collection
+    // Important dates collection - advisor can manage, others can read
     match /importantDates/{dateId} {
-      allow read: if isSignedIn() && (isAdmin() || hasAdvisor(resource.data.advisorId));
-      allow create: if isAdmin() || (isAdvisor() && request.resource.data.advisorId == request.auth.uid);
-      allow update, delete: if isAdmin() || (isAdvisor() && resource.data.advisorId == request.auth.uid);
+      allow read: if isSignedIn();
+      allow create, update, delete: if isZeechAdvisor();
     }
     
-    // Meetings collection - students need CRUD for their own meetings, advisors can read
+    // Meetings collection - advisor can read all, students can CRUD their own
     match /meetings/{meetingId} {
-      allow read: if isSignedIn() && (isAdmin() || resource.data.studentId == request.auth.uid || isAdvisor());
-      allow write: if isSignedIn() && (isAdmin() || resource.data.studentId == request.auth.uid);
+      allow read: if isSignedIn() && hasAdvisorAccess(resource.data.studentId);
+      allow create, update, delete: if isSignedIn() && hasAdvisorAccess(resource.data.studentId);
     }
     
-    // Reflections collection - students need CRUD for their own reflections, advisors can read their students'
+    // Reflections collection - advisor can read all, students can CRUD their own  
     match /reflections/{reflectionId} {
-      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid || isAdvisor());
-      allow write: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow read: if isSignedIn() && hasAdvisorAccess(resource.data.userId);
+      allow create, update, delete: if isSignedIn() && hasAdvisorAccess(resource.data.userId);
     }
     
-    // Goals collection - students need CRUD for their own goals, advisors can read their students'
+    // Goals collection - advisor can read all, students can CRUD their own
     match /goals/{goalId} {
-      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid || isAdvisor());
-      allow write: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow read: if isSignedIn() && hasAdvisorAccess(resource.data.userId);
+      allow create, update, delete: if isSignedIn() && hasAdvisorAccess(resource.data.userId);
     }
     
-    // Advisor pathways collection - advisors need read/write for their own pathways
+    // Advisor pathways collection - advisor can manage their own
     match /advisor_pathways/{pathwayId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || (isAdvisor() && resource.data.advisor_id == request.auth.uid);
+      allow write: if isZeechAdvisor();
     }
     
     // Calendly events and related collections - allow access for authenticated users
@@ -57,9 +51,9 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
     
-    // Any other collections - restrict to admins only for security
+    // Any other collections - restrict to advisor only for security
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if isZeechAdvisor();
     }
   }
 }
