@@ -161,10 +161,19 @@ export const meetingsService = {
   getMeetingsNeedingAttention(meetings) {
     const now = new Date();
     return meetings.filter(meeting => {
-      // Meetings that are overdue or completed but missing feedback
-      return this.isMeetingOverdue(meeting) || 
-             (meeting.status === 'completed' && !meeting.advisorFeedback) ||
-             (meeting.status === 'scheduled' && !meeting.attendanceMarked && new Date(meeting.scheduledDate) < now);
+      // Skip cancelled meetings
+      if (meeting.status === 'cancelled') return false;
+      
+      // Meetings that are past their scheduled time and attendance hasn't been marked
+      const isPastAndNotMarked = meeting.status === 'scheduled' && 
+                                 !meeting.attendanceMarked && 
+                                 new Date(meeting.scheduledDate) < now;
+      
+      // Completed or no-show meetings without feedback
+      const needsFeedback = (meeting.status === 'completed' || meeting.status === 'no-show') && 
+                           !meeting.advisorFeedback;
+      
+      return isPastAndNotMarked || needsFeedback;
     });
   },
 
