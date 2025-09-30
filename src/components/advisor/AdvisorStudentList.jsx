@@ -9,7 +9,7 @@ import { getStudentsByAdvisor, getUserGoals } from '../../services/firebase';
  * Phase 3B: Now uses real Firebase data to show students assigned to the advisor
  * with actual goal counts and activity information.
  */
-const AdvisorStudentList = ({ onBack, advisorEmail, userProfile }) => {
+const AdvisorStudentList = ({ onBack, advisorEmail, userProfile, onStudentClick }) => {
   const [studentsWithGoals, setStudentsWithGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -213,6 +213,7 @@ const AdvisorStudentList = ({ onBack, advisorEmail, userProfile }) => {
               <div
                 key={student.id}
                 className="flex items-center justify-between p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => onStudentClick && onStudentClick(student)}
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Student Avatar */}
@@ -234,7 +235,9 @@ const AdvisorStudentList = ({ onBack, advisorEmail, userProfile }) => {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-500 truncate">{student.pathway || 'No pathway specified'}</p>
+                    {student.pathway && (
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">{student.pathway}</p>
+                    )}
                     <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 mt-1">
                       <span>{student.activeGoals} active goal{student.activeGoals !== 1 ? 's' : ''}</span>
                       <span>•</span>
@@ -253,14 +256,14 @@ const AdvisorStudentList = ({ onBack, advisorEmail, userProfile }) => {
         )}
 
         {/* Future Features Note */}
-        {totalStudents > 0 && (
+        {totalStudents > 0 && onStudentClick && (
           <div className="mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg">
             <div className="flex items-start gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
               <div>
                 <p className="text-sm font-medium text-blue-900">Interactive Features</p>
                 <p className="text-xs sm:text-sm text-blue-700 mt-1">
-                  Click on students to view detailed progress, provide feedback, and track goal completion in future updates.
+                  Click on students to view detailed progress, provide feedback, and track goal completion.
                 </p>
               </div>
             </div>
