@@ -105,6 +105,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         onBack={() => setShowStudentList(false)}
         advisorEmail={advisorEmail}
         userProfile={userProfile}
+        onStudentClick={handleStudentClick}
       />
     );
   }
@@ -172,8 +173,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   };
 
   const handleReflectionClick = (reflection) => {
-    // For now, just show an alert. In future this could open a reflection detail modal
-    alert(`Opening reflection by ${reflection.studentName}: ${reflection.title}`);
+    // Navigate to all reflections view
+    setShowAllReflections(true);
   };
 
   const handleViewAllReflections = () => {

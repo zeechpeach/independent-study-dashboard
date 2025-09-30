@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Mail, Calendar, Target, MessageSquare } from 'lucide-react';
-import { getUserProfile, getUserGoals, getUserReflections } from '../../services/firebase';
+import { getUserProfile, getUserGoals, getUserReflections, getUserMeetings } from '../../services/firebase';
+import { meetingsService } from '../../services/meetingsService';
 
 /**
  * AdvisorStudentDetail - Detailed view of a specific student for advisors
@@ -9,6 +10,8 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
   const [student, setStudent] = useState(null);
   const [goals, setGoals] = useState([]);
   const [reflections, setReflections] = useState([]);
+  const [meetings, setMeetings] = useState([]);
+  const [meetingCounts, setMeetingCounts] = useState({ completed: 0, missed: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -28,18 +31,25 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
         let studentData = null;
         let studentGoals = [];
         let studentReflections = [];
+        let studentMeetings = [];
 
         if (studentId) {
-          [studentData, studentGoals, studentReflections] = await Promise.all([
+          [studentData, studentGoals, studentReflections, studentMeetings] = await Promise.all([
             getUserProfile(studentId),
             getUserGoals(studentId),
-            getUserReflections(studentId)
+            getUserReflections(studentId),
+            getUserMeetings(studentId)
           ]);
         }
         
         setStudent(studentData || { name: studentName, email: studentEmail });
         setGoals(studentGoals);
         setReflections(studentReflections);
+        setMeetings(studentMeetings);
+        
+        // Calculate meeting attendance counts
+        const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
+        setMeetingCounts(counts);
       } catch (err) {
         console.error('Error fetching student details:', err);
         setError('Failed to load student details');
@@ -139,6 +149,23 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
               <span className="text-gray-700">Pathway: {student.pathway}</span>
             </div>
           )}
+          <div className="pt-3 border-t border-gray-200">
+            <div className="text-sm font-medium text-gray-700 mb-2">Meeting Attendance</div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{meetingCounts.total}</div>
+                <div className="text-xs text-gray-500">Total</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{meetingCounts.completed}</div>
+                <div className="text-xs text-gray-500">Completed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{meetingCounts.missed}</div>
+                <div className="text-xs text-gray-500">Missed</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
