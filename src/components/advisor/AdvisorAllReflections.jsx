@@ -49,6 +49,7 @@ const AdvisorAllReflections = ({ advisorEmail, userProfile, onBack }) => {
 
   useEffect(() => {
     fetchAllReflections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actualAdvisorEmail]);
 
   const handleMarkAsReviewed = async (reflectionId) => {

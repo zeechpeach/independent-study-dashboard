@@ -10,7 +10,6 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
   const [student, setStudent] = useState(null);
   const [goals, setGoals] = useState([]);
   const [reflections, setReflections] = useState([]);
-  const [meetings, setMeetings] = useState([]);
   const [meetingCounts, setMeetingCounts] = useState({ completed: 0, missed: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +44,6 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
         setStudent(studentData || { name: studentName, email: studentEmail });
         setGoals(studentGoals);
         setReflections(studentReflections);
-        setMeetings(studentMeetings);
         
         // Calculate meeting attendance counts
         const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
