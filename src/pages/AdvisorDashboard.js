@@ -98,6 +98,25 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
+  // Click handlers for panels
+  const handleStudentClick = (student) => {
+    setSelectedStudent(student);
+    setShowStudentDetail(true);
+  };
+
+  const handleReflectionClick = (reflection) => {
+    // Navigate to all reflections view
+    setShowAllReflections(true);
+  };
+
+  const handleViewAllReflections = () => {
+    setShowAllReflections(true);
+  };
+
+  const handleViewAllStudentIssues = () => {
+    setShowStudentList(true);
+  };
+
   // Show student list if requested and feature is enabled
   if (showStudentList && isStudentListEnabled) {
     return (
@@ -105,6 +124,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         onBack={() => setShowStudentList(false)}
         advisorEmail={advisorEmail}
         userProfile={userProfile}
+        onStudentClick={handleStudentClick}
       />
     );
   }
@@ -163,25 +183,6 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     pendingReflections: 0,
     activeGoals: 0,
     overdueItems: 0
-  };
-
-  // Click handlers for panels
-  const handleStudentClick = (student) => {
-    setSelectedStudent(student);
-    setShowStudentDetail(true);
-  };
-
-  const handleReflectionClick = (reflection) => {
-    // For now, just show an alert. In future this could open a reflection detail modal
-    alert(`Opening reflection by ${reflection.studentName}: ${reflection.title}`);
-  };
-
-  const handleViewAllReflections = () => {
-    setShowAllReflections(true);
-  };
-
-  const handleViewAllStudentIssues = () => {
-    setShowStudentList(true);
   };
 
   return (

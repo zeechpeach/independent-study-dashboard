@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MessageSquare, User, Clock } from 'lucide-react';
-import { getRecentReflectionsByAdvisor } from '../../services/firebase';
+import { getRecentReflectionsByAdvisor, updateReflection } from '../../services/firebase';
 
 /**
  * AdvisorAllReflections - Full view of all student reflections for advisor review
@@ -12,41 +12,61 @@ const AdvisorAllReflections = ({ advisorEmail, userProfile, onBack }) => {
 
   const actualAdvisorEmail = advisorEmail || userProfile?.email;
 
+  const fetchAllReflections = async () => {
+    if (!actualAdvisorEmail) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      // Get more reflections for the full view
+      const reflectionData = await getRecentReflectionsByAdvisor(actualAdvisorEmail, 50);
+      
+      const transformedReflections = reflectionData.map(reflection => ({
+        id: reflection.id,
+        studentName: reflection.studentName,
+        type: reflection.type || 'weekly',
+        title: reflection.title || 'Reflection',
+        content: reflection.content || 'No content available',
+        submittedAt: reflection.createdAt?.toDate?.() || new Date(reflection.createdAt),
+        pathway: reflection.pathway,
+        studentEmail: reflection.studentEmail,
+        reviewed: reflection.reviewed || false,
+        reviewedAt: reflection.reviewedAt,
+        reviewedBy: reflection.reviewedBy
+      }));
+      
+      setReflections(transformedReflections);
+    } catch (err) {
+      console.error('Error fetching all reflections:', err);
+      setError('Failed to load reflections');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAllReflections = async () => {
-      if (!actualAdvisorEmail) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        // Get more reflections for the full view
-        const reflectionData = await getRecentReflectionsByAdvisor(actualAdvisorEmail, 50);
-        
-        const transformedReflections = reflectionData.map(reflection => ({
-          id: reflection.id,
-          studentName: reflection.studentName,
-          type: reflection.type || 'weekly',
-          title: reflection.title || 'Reflection',
-          content: reflection.content || 'No content available',
-          submittedAt: reflection.createdAt?.toDate?.() || new Date(reflection.createdAt),
-          pathway: reflection.pathway,
-          studentEmail: reflection.studentEmail
-        }));
-        
-        setReflections(transformedReflections);
-      } catch (err) {
-        console.error('Error fetching all reflections:', err);
-        setError('Failed to load reflections');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAllReflections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actualAdvisorEmail]);
+
+  const handleMarkAsReviewed = async (reflectionId) => {
+    try {
+      await updateReflection(reflectionId, {
+        reviewed: true,
+        reviewedAt: new Date().toISOString(),
+        reviewedBy: actualAdvisorEmail
+      });
+      
+      // Refresh the reflections list
+      await fetchAllReflections();
+    } catch (err) {
+      console.error('Error marking reflection as reviewed:', err);
+      alert('Failed to mark reflection as reviewed. Please try again.');
+    }
+  };
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -123,7 +143,7 @@ const AdvisorAllReflections = ({ advisorEmail, userProfile, onBack }) => {
       {/* Reflections List */}
       <div className="space-y-4">
         {reflections.map((reflection) => (
-          <div key={reflection.id} className="card">
+          <div key={reflection.id} className={`card ${reflection.reviewed ? 'opacity-60' : ''}`}>
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -138,6 +158,11 @@ const AdvisorAllReflections = ({ advisorEmail, userProfile, onBack }) => {
                   </span>
                   {reflection.pathway && (
                     <span className="text-sm text-gray-500">• {reflection.pathway}</span>
+                  )}
+                  {reflection.reviewed && (
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                      ✓ Reviewed
+                    </span>
                   )}
                 </div>
                 
@@ -160,8 +185,12 @@ const AdvisorAllReflections = ({ advisorEmail, userProfile, onBack }) => {
                   <MessageSquare className="w-4 h-4" />
                   Add Feedback
                 </button>
-                <button className="btn btn-secondary btn-sm">
-                  Mark as Reviewed
+                <button 
+                  className={`btn btn-sm ${reflection.reviewed ? 'btn-success' : 'btn-secondary'}`}
+                  onClick={() => handleMarkAsReviewed(reflection.id)}
+                  disabled={reflection.reviewed}
+                >
+                  {reflection.reviewed ? '✓ Reviewed' : 'Mark as Reviewed'}
                 </button>
               </div>
             </div>
