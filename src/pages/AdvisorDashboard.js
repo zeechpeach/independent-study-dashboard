@@ -117,8 +117,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     setShowStudentList(true);
   };
 
-  // Show student list if requested and feature is enabled
-  if (showStudentList && isStudentListEnabled) {
+  // Show student list if requested and feature is enabled (unless showing student detail)
+  if (showStudentList && isStudentListEnabled && !showStudentDetail) {
     return (
       <AdvisorStudentList
         onBack={() => setShowStudentList(false)}
@@ -171,6 +171,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         onBack={() => {
           setShowStudentDetail(false);
           setSelectedStudent(null);
+          // Return to student list instead of main dashboard
+          setShowStudentList(true);
         }}
       />
     );

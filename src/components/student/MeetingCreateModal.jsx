@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, X, AlertCircle } from 'lucide-react';
+import { Calendar, X, AlertCircle } from 'lucide-react';
 
 /**
  * Modal for creating or editing a meeting manually
@@ -9,8 +9,6 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
     title: '',
     description: '',
     scheduledDate: '',
-    scheduledTime: '',
-    duration: '30', // Default 30 minutes
     meetingLink: ''
   });
   const [errors, setErrors] = useState({});
@@ -20,17 +18,14 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
   useEffect(() => {
     if (isOpen) {
       if (editingMeeting) {
-        // Format the date/time from the existing meeting
+        // Format the date from the existing meeting
         const meetingDate = new Date(editingMeeting.scheduledDate);
         const formattedDate = meetingDate.toISOString().split('T')[0];
-        const formattedTime = meetingDate.toTimeString().split(' ')[0].slice(0, 5);
         
         setFormData({
           title: editingMeeting.title || '',
           description: editingMeeting.description || '',
           scheduledDate: formattedDate,
-          scheduledTime: formattedTime,
-          duration: editingMeeting.duration ? editingMeeting.duration.toString() : '30',
           meetingLink: editingMeeting.meetingLink || ''
         });
       } else {
@@ -39,8 +34,6 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
           title: '',
           description: '',
           scheduledDate: '',
-          scheduledTime: '',
-          duration: '30',
           meetingLink: ''
         });
       }
@@ -59,18 +52,6 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
       newErrors.scheduledDate = 'Meeting date is required';
     }
     
-    if (!formData.scheduledTime) {
-      newErrors.scheduledTime = 'Meeting time is required';
-    }
-    
-    // Check if date/time is in the future
-    if (formData.scheduledDate && formData.scheduledTime) {
-      const meetingDateTime = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
-      if (meetingDateTime <= new Date()) {
-        newErrors.scheduledDate = 'Meeting must be scheduled for a future date and time';
-      }
-    }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,14 +65,14 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
 
     setLoading(true);
     try {
-      // Combine date and time
-      const scheduledDateTime = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
+      // Use the date at noon (12:00 PM) to avoid timezone issues
+      const scheduledDateTime = new Date(`${formData.scheduledDate}T12:00:00`);
       
       const meetingData = {
         title: formData.title,
         description: formData.description,
         scheduledDate: scheduledDateTime.toISOString(),
-        duration: parseInt(formData.duration),
+        duration: 30, // Default 30 minutes
         meetingLink: formData.meetingLink,
         status: 'scheduled',
         source: 'manual',
@@ -198,56 +179,22 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date *
-              </label>
-              <input
-                type="date"
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.scheduledDate ? 'border-red-300' : 'border-gray-300'
-                }`}
-                value={formData.scheduledDate}
-                onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
-                min={today}
-              />
-              {errors.scheduledDate && (
-                <p className="text-sm text-red-600 mt-1">{errors.scheduledDate}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Time *
-              </label>
-              <input
-                type="time"
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.scheduledTime ? 'border-red-300' : 'border-gray-300'
-                }`}
-                value={formData.scheduledTime}
-                onChange={(e) => handleInputChange('scheduledTime', e.target.value)}
-              />
-              {errors.scheduledTime && (
-                <p className="text-sm text-red-600 mt-1">{errors.scheduledTime}</p>
-              )}
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration (minutes)
+              Date *
             </label>
-            <select
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={formData.duration}
-              onChange={(e) => handleInputChange('duration', e.target.value)}
-            >
-              <option value="15">15 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="60">60 minutes</option>
-            </select>
+            <input
+              type="date"
+              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.scheduledDate ? 'border-red-300' : 'border-gray-300'
+              }`}
+              value={formData.scheduledDate}
+              onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
+            />
+            {errors.scheduledDate && (
+              <p className="text-sm text-red-600 mt-1">{errors.scheduledDate}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">You can log past or future meetings</p>
           </div>
 
           <div>
