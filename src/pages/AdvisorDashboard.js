@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, BookOpen, Target } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
-import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel';
+import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
@@ -104,14 +104,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     setShowStudentDetail(true);
   };
 
-  const handleReflectionClick = (reflection) => {
-    // Navigate to all reflections view
-    setShowAllReflections(true);
-  };
 
-  const handleViewAllReflections = () => {
-    setShowAllReflections(true);
-  };
 
   const handleViewAllStudentIssues = () => {
     setShowStudentList(true);
@@ -329,11 +322,9 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
             onStudentClick={handleStudentClick}
             onViewAllClick={handleViewAllStudentIssues}
           />
-          <RecentReflectionsPanel 
+          <StrugglingItemsPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}
-            onReflectionClick={handleReflectionClick}
-            onViewAllClick={handleViewAllReflections}
           />
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>
