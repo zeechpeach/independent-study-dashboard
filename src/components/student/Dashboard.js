@@ -1,49 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Target, Calendar, Clock, Plus } from 'lucide-react';
-import ReflectionForm from './ReflectionForm';
-import GoalTracker from './GoalTracker';
+import { Calendar, Clock, Plus, CheckSquare } from 'lucide-react';
+import ActionPlan from './ActionPlan';
 import CalendlyEmbed from '../shared/CalendlyEmbed.jsx';
-import GoalPreviewCard from './GoalPreviewCard';
-import ReflectionCard from './ReflectionCard';
-import ReflectionModal from './ReflectionModal';
 import QuickActionCard from './QuickActionCard';
-import GoalModal from './GoalModal';
 import MeetingsCard from './MeetingsCard';
 import MeetingCreateModal from './MeetingCreateModal';
-import SegmentedControl from '../ui/SegmentedControl';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
 import useMeetings from '../../hooks/useMeetings';
 import { 
-  createReflection, 
-  updateReflection, 
-  getUserReflections,
-  getUserGoals,
-  createGoal,
-  updateGoal,
-  deleteGoal,
+  getUserActionItems,
+  createActionItem,
+  updateActionItem,
+  deleteActionItem,
   getImportantDatesForAdvisors,
   getAdvisorByName
 } from '../../services/firebase';
 
 const StudentDashboard = ({ user, userProfile }) => {
-  const [reflections, setReflections] = useState([]);
-  const [goals, setGoals] = useState([]);
+  const [actionItems, setActionItems] = useState([]);
   const [importantDates, setImportantDates] = useState([]);
   const [advisorInfo, setAdvisorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showReflectionForm, setShowReflectionForm] = useState(false);
-  const [showGoalTracker, setShowGoalTracker] = useState(false);
-  const [showReflectionModal, setShowReflectionModal] = useState(false);
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [selectedReflection, setSelectedReflection] = useState(null);
-  const [selectedGoal, setSelectedGoal] = useState(null);
-  const [reflectionType, setReflectionType] = useState('pre-meeting');
-  const [editingReflection, setEditingReflection] = useState(null);
+  const [showActionPlan, setShowActionPlan] = useState(false);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
   const [showMeetingCreateModal, setShowMeetingCreateModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState(null);
-  const [goalFilter, setGoalFilter] = useState('all');
 
   // Use the meetings hook for meeting management
   const {
@@ -64,13 +46,8 @@ const StudentDashboard = ({ user, userProfile }) => {
     
     try {
       setLoading(true);
-      const [userReflections, userGoals] = await Promise.all([
-        getUserReflections(user.uid),
-        getUserGoals(user.uid)
-      ]);
-
-      setReflections(userReflections);
-      setGoals(userGoals);
+      const userActionItems = await getUserActionItems(user.uid);
+      setActionItems(userActionItems);
       
       // Fetch important dates from assigned advisors
       if (userProfile?.advisor) {
@@ -119,89 +96,35 @@ const StudentDashboard = ({ user, userProfile }) => {
     fetchAdvisorInfo();
   }, [userProfile?.advisor]);
 
-  const handleSaveReflection = async (reflectionData) => {
+  // Handle action item operations
+  const handleCreateActionItem = async (itemData) => {
     try {
-      if (editingReflection) {
-        await updateReflection(editingReflection.id, reflectionData);
-      } else {
-        await createReflection(user.uid, reflectionData);
-      }
-      
+      await createActionItem(user.uid, itemData);
       await fetchUserData();
-      setShowReflectionForm(false);
-      setEditingReflection(null);
     } catch (error) {
-      console.error('Error saving reflection:', error);
+      console.error('Error creating action item:', error);
       throw error;
     }
   };
 
-  const handleCreateGoal = async (goalData) => {
+  const handleUpdateActionItem = async (itemId, itemData) => {
     try {
-      await createGoal(user.uid, goalData);
+      await updateActionItem(itemId, itemData);
       await fetchUserData();
     } catch (error) {
-      console.error('Error creating goal:', error);
+      console.error('Error updating action item:', error);
       throw error;
     }
   };
 
-  const handleUpdateGoal = async (goalId, goalData) => {
+  const handleDeleteActionItem = async (itemId) => {
     try {
-      await updateGoal(goalId, goalData);
+      await deleteActionItem(itemId);
       await fetchUserData();
     } catch (error) {
-      console.error('Error updating goal:', error);
+      console.error('Error deleting action item:', error);
       throw error;
     }
-  };
-
-  const handleDeleteGoal = async (goalId) => {
-    try {
-      await deleteGoal(goalId);
-      await fetchUserData();
-      closeGoalModal();
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      throw error;
-    }
-  };
-
-  const openReflectionForm = (type, reflection = null) => {
-    setReflectionType(type);
-    setEditingReflection(reflection);
-    setShowReflectionForm(true);
-  };
-
-  const openReflectionModal = (reflection) => {
-    setSelectedReflection(reflection);
-    setShowReflectionModal(true);
-  };
-
-  const closeReflectionModal = () => {
-    setSelectedReflection(null);
-    setShowReflectionModal(false);
-  };
-
-  const openGoalModal = (goal) => {
-    setSelectedGoal(goal);
-    setShowGoalModal(true);
-  };
-
-  const closeGoalModal = () => {
-    setSelectedGoal(null);
-    setShowGoalModal(false);
-  };
-
-  const handleEditReflection = (reflection) => {
-    openReflectionForm(reflection.type, reflection);
-  };
-
-  const handleEditGoal = (goal) => {
-    // Close goal modal and open goal tracker in edit mode
-    closeGoalModal();
-    setShowGoalTracker(true);
-    // We'll need to pass the goal to edit to GoalTracker
   };
 
   // Get the appropriate Calendly link
@@ -222,8 +145,11 @@ const StudentDashboard = ({ user, userProfile }) => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
-  const getRecentReflections = () => {
-    return reflections.slice(0, 3);
+  const getActionItemStats = () => {
+    const active = actionItems.filter(item => !item.completed).length;
+    const completed = actionItems.filter(item => item.completed).length;
+    const struggling = actionItems.filter(item => item.struggling && !item.completed).length;
+    return { active, completed, struggling, total: actionItems.length };
   };
 
   // Meeting-related handlers
@@ -268,10 +194,6 @@ const StudentDashboard = ({ user, userProfile }) => {
     }
   };
 
-  const handlePrepareForMeeting = (meeting) => {
-    openReflectionForm('pre-meeting', null, meeting?.id);
-  };
-
   const handleJoinMeeting = (meeting) => {
     if (meeting?.meetingLink) {
       window.open(meeting.meetingLink, '_blank');
@@ -288,61 +210,7 @@ const StudentDashboard = ({ user, userProfile }) => {
     });
   };
 
-  const getGoalCounts = () => {
-    const active = goals.filter(goal => goal.status === 'active').length;
-    const completed = goals.filter(goal => goal.status === 'completed').length;
-    const notStarted = goals.filter(goal => goal.status === 'not_started').length;
-    const overdue = goals.filter(goal => {
-      const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
-      return isOverdue;
-    }).length;
 
-    return {
-      all: goals.length,
-      active,
-      completed,
-      not_started: notStarted,
-      overdue
-    };
-  };
-
-  const getFilteredGoals = () => {
-    switch (goalFilter) {
-      case 'active':
-        return goals.filter(goal => goal.status === 'active');
-      case 'completed':
-        return goals.filter(goal => goal.status === 'completed');
-      case 'not_started':
-        return goals.filter(goal => goal.status === 'not_started');
-      case 'overdue':
-        return goals.filter(goal => {
-          const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
-          return isOverdue;
-        });
-      default:
-        return goals;
-    }
-  };
-
-  const getRelevantGoals = () => {
-    const filteredGoals = getFilteredGoals();
-    
-    // If showing all goals, prioritize Active, then Not Started, then Overdue goals (if not already Active)
-    if (goalFilter === 'all') {
-      const activeGoals = goals.filter(goal => goal.status === 'active');
-      const notStartedGoals = goals.filter(goal => goal.status === 'not_started');
-      const overdueGoals = goals.filter(goal => {
-        const isOverdue = goal.targetDate && new Date(goal.targetDate) < new Date() && goal.status !== 'completed';
-        return isOverdue && goal.status !== 'active';
-      });
-      
-      const relevantGoals = [...activeGoals, ...notStartedGoals, ...overdueGoals];
-      return relevantGoals.slice(0, 3); // Limit to 3 most relevant
-    }
-    
-    // For specific filters, show up to 3
-    return filteredGoals.slice(0, 3);
-  };
 
   if (loading) {
     return (
@@ -433,29 +301,15 @@ const StudentDashboard = ({ user, userProfile }) => {
     );
   }
 
-  if (showGoalTracker) {
+  if (showActionPlan) {
     return (
-      <GoalTracker
+      <ActionPlan
         user={user}
-        goals={goals}
-        onCreateGoal={handleCreateGoal}
-        onUpdateGoal={handleUpdateGoal}
-        onDeleteGoal={handleDeleteGoal}
-        onBack={() => setShowGoalTracker(false)}
-      />
-    );
-  }
-
-  if (showReflectionForm) {
-    return (
-      <ReflectionForm
-        type={reflectionType}
-        existingReflection={editingReflection}
-        onSave={handleSaveReflection}
-        onCancel={() => {
-          setShowReflectionForm(false);
-          setEditingReflection(null);
-        }}
+        actionItems={actionItems}
+        onCreateItem={handleCreateActionItem}
+        onUpdateItem={handleUpdateActionItem}
+        onDeleteItem={handleDeleteActionItem}
+        onBack={() => setShowActionPlan(false)}
       />
     );
   }
@@ -484,23 +338,11 @@ const StudentDashboard = ({ user, userProfile }) => {
           </h3>
           <GridContainer cols={2}>
             <QuickActionCard
-              icon={BookOpen}
-              title="Pre-Meeting Reflection"
-              subtitle="Prepare for your next meeting"
-              onClick={() => openReflectionForm('pre-meeting')}
+              icon={CheckSquare}
+              title="Action Plan"
+              subtitle="Manage your tasks and goals"
+              onClick={() => setShowActionPlan(true)}
               isPrimary={true}
-            />
-            <QuickActionCard
-              icon={BookOpen}
-              title="Post-Meeting Summary"
-              subtitle="Document insights and action items"
-              onClick={() => openReflectionForm('post-meeting')}
-            />
-            <QuickActionCard
-              icon={Target}
-              title="Manage Goals"
-              subtitle="Track progress and set new goals"
-              onClick={() => setShowGoalTracker(true)}
             />
             <QuickActionCard
               icon={Calendar}
@@ -511,116 +353,73 @@ const StudentDashboard = ({ user, userProfile }) => {
           </GridContainer>
         </div>
 
-        {/* Goals Section with Filter */}
+        {/* Action Plan Summary */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-blue-600" />
-              <h2 className="card-title">Goals</h2>
+              <CheckSquare className="w-5 h-5 text-blue-600" />
+              <h2 className="card-title">Action Plan</h2>
             </div>
             <button 
-              onClick={() => setShowGoalTracker(true)}
+              onClick={() => setShowActionPlan(true)}
               className="btn btn-sm btn-secondary"
             >
               <Plus className="w-4 h-4" />
-              Add Goal
+              Add Item
             </button>
           </div>
-          
-          {/* Goal Filter */}
-          <div className="mb-6">
-            <SegmentedControl
-              options={[
-                { label: 'All Goals', value: 'all', count: getGoalCounts().all },
-                { label: 'Active', value: 'active', count: getGoalCounts().active },
-                { label: 'Completed', value: 'completed', count: getGoalCounts().completed },
-                { label: 'Overdue', value: 'overdue', count: getGoalCounts().overdue },
-                { label: 'Not Started', value: 'not_started', count: getGoalCounts().not_started }
-              ]}
-              value={goalFilter}
-              onChange={setGoalFilter}
-            />
-          </div>
 
-          <div className="space-y-3">
-            {getRelevantGoals().length > 0 ? (
-              <>
-                {getRelevantGoals().map((goal, index) => (
-                  <GoalPreviewCard 
-                    key={goal.id || index} 
-                    goal={goal} 
-                    onClick={openGoalModal}
-                  />
-                ))}
-                <div className="pt-2">
-                  <button
-                    onClick={() => setShowGoalTracker(true)}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    View All Goals →
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="p-6 bg-gray-50 rounded-lg text-center">
-                <Target className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 mb-3">
-                  {goalFilter === 'all' ? 'No goals set yet' : `No ${goalFilter.replace('_', ' ')} goals`}
-                </p>
-                <button
-                  onClick={() => setShowGoalTracker(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  {goalFilter === 'all' ? 'Set Your First Goal' : 'Create Goal'}
-                </button>
+          <div className="space-y-4">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">{getActionItemStats().active}</p>
+                <p className="text-xs text-gray-600">Active</p>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Reflections */}
-        <div className="card">
-          <div className="card-header">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-purple-600" />
-              <h2 className="card-title">Recent Reflections</h2>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{getActionItemStats().completed}</p>
+                <p className="text-xs text-gray-600">Completed</p>
+              </div>
+              <div className="text-center p-3 bg-orange-50 rounded-lg">
+                <p className="text-2xl font-bold text-orange-600">{getActionItemStats().struggling}</p>
+                <p className="text-xs text-gray-600">Need Help</p>
+              </div>
             </div>
-          </div>
-          <div className="space-y-3">
-            {getRecentReflections().length > 0 ? (
+
+            {/* Recent active items */}
+            {getActionItemStats().total > 0 ? (
               <>
-                {getRecentReflections().map((reflection, index) => (
-                  <ReflectionCard
-                    key={reflection.id || index}
-                    reflection={reflection}
-                    onClick={openReflectionModal}
-                  />
-                ))}
-                <div className="pt-2 flex gap-3">
-                  <button
-                    onClick={() => openReflectionForm('pre-meeting')}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    New Reflection
-                  </button>
-                  <span className="text-gray-300">•</span>
-                  <button
-                    onClick={() => {/* Navigate to reflections page if exists */}}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    View All Reflections →
-                  </button>
+                <div className="space-y-2">
+                  {actionItems
+                    .filter(item => !item.completed)
+                    .slice(0, 3)
+                    .map(item => (
+                      <div key={item.id} className={`p-3 rounded-lg border ${item.struggling ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-gray-50'}`}>
+                        <p className="text-sm text-gray-900">{item.text}</p>
+                        {item.struggling && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-orange-600 text-white text-xs rounded">
+                            Need Help
+                          </span>
+                        )}
+                      </div>
+                    ))}
                 </div>
+                <button
+                  onClick={() => setShowActionPlan(true)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium w-full text-center"
+                >
+                  View Full Action Plan →
+                </button>
               </>
             ) : (
               <div className="p-6 bg-gray-50 rounded-lg text-center">
-                <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 mb-3">No reflections yet</p>
+                <CheckSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No action items yet</p>
                 <button
-                  onClick={() => openReflectionForm('pre-meeting')}
+                  onClick={() => setShowActionPlan(true)}
                   className="btn btn-primary btn-sm"
                 >
-                  Write Your First Reflection
+                  Create Your First Item
                 </button>
               </div>
             )}
@@ -638,7 +437,6 @@ const StudentDashboard = ({ user, userProfile }) => {
           loading={meetingsLoading}
           error={meetingsError}
           onBookMeeting={handleBookMeeting}
-          onPrepareForMeeting={handlePrepareForMeeting}
           onJoinMeeting={handleJoinMeeting}
           onEditMeeting={handleEditMeeting}
           onMarkAttendance={markStudentAttendance}
@@ -686,46 +484,26 @@ const StudentDashboard = ({ user, userProfile }) => {
           </div>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total Goals</span>
-              <span className="font-medium text-gray-900">{goals.length}</span>
+              <span className="text-sm text-gray-600">Total Action Items</span>
+              <span className="font-medium text-gray-900">{getActionItemStats().total}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Active Goals</span>
-              <span className="font-medium text-green-600">{getGoalCounts().active}</span>
+              <span className="text-sm text-gray-600">Active Items</span>
+              <span className="font-medium text-blue-600">{getActionItemStats().active}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Completed Goals</span>
-              <span className="font-medium text-blue-600">{getGoalCounts().completed}</span>
+              <span className="text-sm text-gray-600">Completed</span>
+              <span className="font-medium text-green-600">{getActionItemStats().completed}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Reflections</span>
-              <span className="font-medium text-purple-600">{reflections.length}</span>
-            </div>
-            {getGoalCounts().overdue > 0 && (
+            {getActionItemStats().struggling > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Overdue</span>
-                <span className="font-medium text-red-600">{getGoalCounts().overdue}</span>
+                <span className="text-sm text-gray-600">Need Help</span>
+                <span className="font-medium text-orange-600">{getActionItemStats().struggling}</span>
               </div>
             )}
           </div>
         </div>
       </DashboardGrid.Sidebar>
-
-      {/* Modals */}
-      <ReflectionModal
-        reflection={selectedReflection}
-        isOpen={showReflectionModal}
-        onClose={closeReflectionModal}
-        onEdit={handleEditReflection}
-      />
-      
-      <GoalModal
-        goal={selectedGoal}
-        isOpen={showGoalModal}
-        onClose={closeGoalModal}
-        onEdit={handleEditGoal}
-        onDelete={handleDeleteGoal}
-      />
 
       {/* Calendly Embed Modal */}
       <CalendlyEmbed

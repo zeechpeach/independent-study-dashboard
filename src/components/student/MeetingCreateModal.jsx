@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, X, AlertCircle } from 'lucide-react';
+import { Calendar, X, AlertCircle, Clock } from 'lucide-react';
 
 /**
  * Modal for creating or editing a meeting manually
@@ -116,9 +116,6 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
       setErrors({ ...errors, [field]: null });
     }
   };
-
-  // Get today's date for min attribute
-  const today = new Date().toISOString().split('T')[0];
 
   if (!isOpen) return null;
 

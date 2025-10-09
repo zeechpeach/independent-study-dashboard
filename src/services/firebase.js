@@ -1163,3 +1163,58 @@ export const updateMeetingCalendlySync = async (meetingId, syncData) => {
     throw error;
   }
 };
+
+// Action Plan functions
+export const createActionItem = async (userId, itemData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'actionItems'), {
+      userId,
+      ...itemData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating action item:', error);
+    throw error;
+  }
+};
+
+export const updateActionItem = async (itemId, data) => {
+  try {
+    await updateDoc(doc(db, 'actionItems', itemId), {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating action item:', error);
+    throw error;
+  }
+};
+
+export const deleteActionItem = async (itemId) => {
+  try {
+    await deleteDoc(doc(db, 'actionItems', itemId));
+  } catch (error) {
+    console.error('Error deleting action item:', error);
+    throw error;
+  }
+};
+
+export const getUserActionItems = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'actionItems'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting user action items:', error);
+    throw error;
+  }
+};
