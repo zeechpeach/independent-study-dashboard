@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, BookOpen, Target } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
-import RecentReflectionsPanel from '../components/advisor/RecentReflectionsPanel';
+import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
@@ -104,21 +104,14 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     setShowStudentDetail(true);
   };
 
-  const handleReflectionClick = (reflection) => {
-    // Navigate to all reflections view
-    setShowAllReflections(true);
-  };
 
-  const handleViewAllReflections = () => {
-    setShowAllReflections(true);
-  };
 
   const handleViewAllStudentIssues = () => {
     setShowStudentList(true);
   };
 
-  // Show student list if requested and feature is enabled
-  if (showStudentList && isStudentListEnabled) {
+  // Show student list if requested and feature is enabled (unless showing student detail)
+  if (showStudentList && isStudentListEnabled && !showStudentDetail) {
     return (
       <AdvisorStudentList
         onBack={() => setShowStudentList(false)}
@@ -171,6 +164,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         onBack={() => {
           setShowStudentDetail(false);
           setSelectedStudent(null);
+          // Return to student list instead of main dashboard
+          setShowStudentList(true);
         }}
       />
     );
@@ -327,11 +322,9 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
             onStudentClick={handleStudentClick}
             onViewAllClick={handleViewAllStudentIssues}
           />
-          <RecentReflectionsPanel 
+          <StrugglingItemsPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}
-            onReflectionClick={handleReflectionClick}
-            onViewAllClick={handleViewAllReflections}
           />
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>
