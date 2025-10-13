@@ -6,7 +6,7 @@ import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
-import AdvisorAllReflections from '../components/advisor/AdvisorAllReflections';
+import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorProgressReports from '../components/advisor/AdvisorProgressReports';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 
@@ -24,7 +24,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [showStudentList, setShowStudentList] = useState(false);
   const [showImportantDates, setShowImportantDates] = useState(false);
-  const [showAllReflections, setShowAllReflections] = useState(false);
+  const [showActiveGoals, setShowActiveGoals] = useState(false);
   const [showProgressReports, setShowProgressReports] = useState(false);
   const [showStudentDetail, setShowStudentDetail] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -132,13 +132,13 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
-  // Show all reflections if requested
-  if (showAllReflections) {
+  // Show active goals if requested
+  if (showActiveGoals) {
     return (
-      <AdvisorAllReflections
+      <AdvisorActiveGoals
         advisorEmail={advisorEmail}
         userProfile={userProfile}
-        onBack={() => setShowAllReflections(false)}
+        onBack={() => setShowActiveGoals(false)}
       />
     );
   }
@@ -248,11 +248,11 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
               </button>
 
               <button 
-                onClick={() => setShowAllReflections(true)}
+                onClick={() => setShowActiveGoals(true)}
                 className="btn btn-secondary"
               >
-                <BookOpen className="w-4 h-4" />
-                Review Reflections
+                <Target className="w-4 h-4" />
+                Review Active Goals
               </button>
               <button 
                 onClick={() => setShowImportantDates(true)}

@@ -798,53 +798,60 @@ export const getStudentsNeedingAttention = async (advisorEmail) => {
     const studentsNeedingAttention = [];
     
     const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
 
     for (const student of students) {
       const reasons = [];
+      let hasRecentActivity = false;
+      let daysSinceLastActivity = 0;
       
-      // Check for recent reflections
+      // Check for recent notes (stored in localStorage, but we can check reflections as a proxy)
       const reflections = await getUserReflections(student.id);
-      const recentReflections = reflections.filter(reflection => {
+      const recentNotes = reflections.filter(reflection => {
         const reflectionDate = reflection.createdAt?.toDate?.() || new Date(reflection.createdAt);
-        return reflectionDate >= weekAgo;
+        return reflectionDate >= tenDaysAgo;
       });
 
-      if (recentReflections.length === 0) {
-        reasons.push('No recent reflections (7+ days)');
+      if (recentNotes.length > 0) {
+        hasRecentActivity = true;
       }
 
-      // Check for overdue goals
-      const goals = await getUserGoals(student.id);
-      const overdueGoals = goals.filter(goal => {
-        if (goal.status === 'completed') return false;
-        const targetDate = goal.targetDate?.toDate?.() || new Date(goal.targetDate);
-        return targetDate < now;
-      });
-
-      if (overdueGoals.length > 0) {
-        reasons.push(`${overdueGoals.length} overdue goal${overdueGoals.length > 1 ? 's' : ''}`);
-      }
-
-      // Check for missed meetings
+      // Check for completed meetings in last 10 days
       const meetings = await getUserMeetings(student.id);
-      const missedMeetings = meetings.filter(meeting => {
-        if (meeting.status === 'completed') return false;
+      const recentCompletedMeetings = meetings.filter(meeting => {
+        if (meeting.status !== 'completed') return false;
         const meetingDate = meeting.scheduledDate?.toDate?.() || new Date(meeting.scheduledDate);
-        return meetingDate < now && meeting.status !== 'cancelled';
+        return meetingDate >= tenDaysAgo;
       });
 
-      if (missedMeetings.length > 0) {
-        reasons.push(`${missedMeetings.length} missed meeting${missedMeetings.length > 1 ? 's' : ''}`);
+      if (recentCompletedMeetings.length > 0) {
+        hasRecentActivity = true;
       }
 
-      if (reasons.length > 0) {
+      // Only flag students with NO recent activity
+      if (!hasRecentActivity) {
+        // Calculate days since last activity (notes or meetings)
+        const allActivities = [...reflections, ...meetings];
+        if (allActivities.length > 0) {
+          const sortedActivities = allActivities.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || a.scheduledDate?.toDate?.() || new Date(a.createdAt || a.scheduledDate);
+            const dateB = b.createdAt?.toDate?.() || b.scheduledDate?.toDate?.() || new Date(b.createdAt || b.scheduledDate);
+            return dateB - dateA;
+          });
+          const lastActivity = sortedActivities[0];
+          const lastActivityDate = lastActivity.createdAt?.toDate?.() || lastActivity.scheduledDate?.toDate?.() || new Date(lastActivity.createdAt || lastActivity.scheduledDate);
+          daysSinceLastActivity = Math.floor((now - lastActivityDate) / (1000 * 60 * 60 * 24));
+        } else {
+          daysSinceLastActivity = 999; // No activity ever
+        }
+
+        reasons.push(`No notes or meetings in ${daysSinceLastActivity > 10 ? daysSinceLastActivity : '10+'} days`);
+        
         studentsNeedingAttention.push({
           ...student,
           attentionReasons: reasons,
-          overdueGoals: overdueGoals.length,
-          daysSinceLastReflection: recentReflections.length === 0 ? 
-            Math.floor((now - (reflections[0]?.createdAt?.toDate?.() || now)) / (1000 * 60 * 60 * 24)) : 0
+          overdueGoals: 0,
+          daysSinceLastActivity: daysSinceLastActivity
         });
       }
     }

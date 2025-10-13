@@ -6,7 +6,6 @@ import { FileText, Save, Bold, Italic, List, Underline, Loader2 } from 'lucide-r
  * Supports basic formatting: bold, italic, underline, and bullet points
  */
 const NotesSection = ({ userId, onSave }) => {
-  const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const editorRef = useRef(null);
@@ -14,11 +13,8 @@ const NotesSection = ({ userId, onSave }) => {
   useEffect(() => {
     // Load saved notes from localStorage as a simple solution
     const savedNotes = localStorage.getItem(`notes_${userId}`);
-    if (savedNotes) {
-      setNotes(savedNotes);
-      if (editorRef.current) {
-        editorRef.current.innerHTML = savedNotes;
-      }
+    if (savedNotes && editorRef.current) {
+      editorRef.current.innerHTML = savedNotes;
     }
     const savedTime = localStorage.getItem(`notes_${userId}_savedAt`);
     if (savedTime) {
@@ -30,7 +26,6 @@ const NotesSection = ({ userId, onSave }) => {
     setSaving(true);
     try {
       const content = editorRef.current.innerHTML;
-      setNotes(content);
       
       // Save to localStorage
       localStorage.setItem(`notes_${userId}`, content);
