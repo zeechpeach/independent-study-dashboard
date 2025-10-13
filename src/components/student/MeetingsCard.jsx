@@ -57,7 +57,7 @@ const MeetingsCard = ({
             className="btn btn-sm btn-secondary"
           >
             <Plus className="w-4 h-4" />
-            Book
+            Log
           </button>
         </div>
         <div className="p-4 bg-red-50 rounded-lg text-center">
@@ -100,10 +100,10 @@ const MeetingsCard = ({
         <button 
           onClick={onBookMeeting}
           className="btn btn-sm btn-secondary"
-          title="Schedule a new meeting"
+          title="Log a meeting"
         >
           <Plus className="w-4 h-4" />
-          Book
+          Log
         </button>
       </div>
 
@@ -137,12 +137,12 @@ const MeetingsCard = ({
         ) : (
           <div className="p-4 bg-gray-50 rounded-lg text-center">
             <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 mb-2">No meetings scheduled</p>
+            <p className="text-sm text-gray-600 mb-2">No meetings logged</p>
             <button 
               onClick={onBookMeeting}
               className="btn btn-primary btn-sm"
             >
-              Book a Meeting
+              Log a Meeting
             </button>
           </div>
         )}
