@@ -6,10 +6,7 @@ import { Calendar, X, AlertCircle, Clock } from 'lucide-react';
  */
 const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeting = null }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    scheduledDate: '',
-    meetingLink: ''
+    scheduledDate: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -23,18 +20,13 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
         const formattedDate = meetingDate.toISOString().split('T')[0];
         
         setFormData({
-          title: editingMeeting.title || '',
-          description: editingMeeting.description || '',
-          scheduledDate: formattedDate,
-          meetingLink: editingMeeting.meetingLink || ''
+          scheduledDate: formattedDate
         });
       } else {
-        // Reset form for new meeting
+        // Default to today's date for new meeting logs
+        const today = new Date().toISOString().split('T')[0];
         setFormData({
-          title: '',
-          description: '',
-          scheduledDate: '',
-          meetingLink: ''
+          scheduledDate: today
         });
       }
       setErrors({});
@@ -43,10 +35,6 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.title.trim()) {
-      newErrors.title = 'Meeting title is required';
-    }
     
     if (!formData.scheduledDate) {
       newErrors.scheduledDate = 'Meeting date is required';
@@ -69,14 +57,15 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
       const scheduledDateTime = new Date(`${formData.scheduledDate}T12:00:00`);
       
       const meetingData = {
-        title: formData.title,
-        description: formData.description,
+        title: 'Meeting Log',
+        description: '',
         scheduledDate: scheduledDateTime.toISOString(),
         duration: 30, // Default 30 minutes
-        meetingLink: formData.meetingLink,
-        status: 'scheduled',
+        meetingLink: '',
+        status: 'completed',  // Logged meetings are completed
         source: 'manual',
-        attendanceMarked: false,
+        attendanceMarked: true,  // Auto-mark as attended
+        studentSelfReported: true,  // Student logged this
         advisorFeedback: '',
         studentId: userProfile?.id || '', // Will be set by the service
         studentName: userProfile?.name || '',
@@ -92,13 +81,9 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
       }
       
       // Reset form
+      const today = new Date().toISOString().split('T')[0];
       setFormData({
-        title: '',
-        description: '',
-        scheduledDate: '',
-        scheduledTime: '',
-        duration: '30',
-        meetingLink: ''
+        scheduledDate: today
       });
       setErrors({});
       onClose();
@@ -126,7 +111,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900">
-              {editingMeeting ? 'Edit Meeting' : 'Schedule New Meeting'}
+              {editingMeeting ? 'Edit Meeting Log' : 'Log a Meeting'}
             </h2>
           </div>
           <button
@@ -145,40 +130,15 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Meeting Title *
-            </label>
-            <input
-              type="text"
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.title ? 'border-red-300' : 'border-gray-300'
-              }`}
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="e.g., Weekly Check-in, Project Review"
-            />
-            {errors.title && (
-              <p className="text-sm text-red-600 mt-1">{errors.title}</p>
-            )}
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              Quickly log a meeting that occurred with your advisor. The date defaults to today.
+            </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={3}
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="What would you like to discuss in this meeting?"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date *
+              Meeting Date *
             </label>
             <input
               type="date"
@@ -191,23 +151,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
             {errors.scheduledDate && (
               <p className="text-sm text-red-600 mt-1">{errors.scheduledDate}</p>
             )}
-            <p className="text-xs text-gray-500 mt-1">You can log past or future meetings</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Meeting Link (optional)
-            </label>
-            <input
-              type="url"
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={formData.meetingLink}
-              onChange={(e) => handleInputChange('meetingLink', e.target.value)}
-              placeholder="https://zoom.us/j/..."
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Add a Zoom, Teams, or other meeting link
-            </p>
+            <p className="text-xs text-gray-500 mt-1">When did the meeting take place?</p>
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -232,7 +176,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
               ) : (
                 <>
                   <Calendar className="w-4 h-4" />
-                  {editingMeeting ? 'Update Meeting' : 'Schedule Meeting'}
+                  {editingMeeting ? 'Update Meeting' : 'Log Meeting'}
                 </>
               )}
             </button>

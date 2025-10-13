@@ -23,8 +23,8 @@ describe('MeetingsCard', () => {
     render(<MeetingsCard {...mockProps} />);
     
     expect(screen.getByText('Meetings')).toBeInTheDocument();
-    expect(screen.getByText('No meetings scheduled')).toBeInTheDocument();
-    expect(screen.getByText('Book a Meeting')).toBeInTheDocument();
+    expect(screen.getByText('No meetings logged')).toBeInTheDocument();
+    expect(screen.getByText('Log a Meeting')).toBeInTheDocument();
   });
 
   it('renders loading state', () => {
@@ -59,10 +59,11 @@ describe('MeetingsCard', () => {
     expect(screen.getByText('Prepare')).toBeInTheDocument();
   });
 
-  it('calls onBookMeeting when book button is clicked', () => {
+  it('calls onBookMeeting when log button is clicked', () => {
     render(<MeetingsCard {...mockProps} />);
     
-    fireEvent.click(screen.getByText('Book'));
+    const logButtons = screen.getAllByText('Log');
+    fireEvent.click(logButtons[0]);
     expect(mockProps.onBookMeeting).toHaveBeenCalled();
   });
 

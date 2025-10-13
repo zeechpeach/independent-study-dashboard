@@ -164,16 +164,15 @@ export const meetingsService = {
       // Skip cancelled meetings
       if (meeting.status === 'cancelled') return false;
       
+      // Skip meetings where attendance has been confirmed
+      if (meeting.attendanceMarked) return false;
+      
       // Meetings that are past their scheduled time and attendance hasn't been marked
       const isPastAndNotMarked = meeting.status === 'scheduled' && 
                                  !meeting.attendanceMarked && 
                                  new Date(meeting.scheduledDate) < now;
       
-      // Completed or no-show meetings without feedback
-      const needsFeedback = (meeting.status === 'completed' || meeting.status === 'no-show') && 
-                           !meeting.advisorFeedback;
-      
-      return isPastAndNotMarked || needsFeedback;
+      return isPastAndNotMarked;
     });
   },
 

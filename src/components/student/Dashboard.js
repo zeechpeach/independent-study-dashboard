@@ -5,6 +5,8 @@ import CalendlyEmbed from '../shared/CalendlyEmbed.jsx';
 import QuickActionCard from './QuickActionCard';
 import MeetingsCard from './MeetingsCard';
 import MeetingCreateModal from './MeetingCreateModal';
+import NotesSection from './NotesSection';
+import ImportantDateModal from './ImportantDateModal';
 import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
 import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
 import useMeetings from '../../hooks/useMeetings';
@@ -14,7 +16,8 @@ import {
   updateActionItem,
   deleteActionItem,
   getImportantDatesForAdvisors,
-  getAdvisorByName
+  getAdvisorByName,
+  createImportantDate
 } from '../../services/firebase';
 
 const StudentDashboard = ({ user, userProfile }) => {
@@ -26,6 +29,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
   const [showMeetingCreateModal, setShowMeetingCreateModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState(null);
+  const [showImportantDateModal, setShowImportantDateModal] = useState(false);
 
   // Use the meetings hook for meeting management
   const {
@@ -194,6 +198,23 @@ const StudentDashboard = ({ user, userProfile }) => {
     }
   };
 
+  const handleAddImportantDate = async (dateData) => {
+    try {
+      // Store important dates as student-specific (using userId as a "student" scope)
+      await createImportantDate({
+        ...dateData,
+        createdBy: user?.uid,
+        scope: 'student',  // Mark as student-created
+        studentId: user?.uid
+      });
+      // Refresh data to show the new date
+      await fetchUserData();
+    } catch (error) {
+      console.error('Error creating important date:', error);
+      throw error;
+    }
+  };
+
   const handleJoinMeeting = (meeting) => {
     if (meeting?.meetingLink) {
       window.open(meeting.meetingLink, '_blank');
@@ -346,8 +367,8 @@ const StudentDashboard = ({ user, userProfile }) => {
             />
             <QuickActionCard
               icon={Calendar}
-              title="Schedule Meeting"
-              subtitle="Book time with your advisor"
+              title="Log Meeting"
+              subtitle="Record a meeting with your advisor"
               onClick={handleBookMeeting}
             />
           </GridContainer>
@@ -425,6 +446,9 @@ const StudentDashboard = ({ user, userProfile }) => {
             )}
           </div>
         </div>
+
+        {/* Notes Section */}
+        <NotesSection userId={user?.uid} />
       </DashboardGrid.Main>
 
       {/* Sidebar */}
@@ -450,6 +474,13 @@ const StudentDashboard = ({ user, userProfile }) => {
               <Clock className="w-5 h-5 text-orange-600" />
               <h2 className="card-title">Important Dates</h2>
             </div>
+            <button 
+              onClick={() => setShowImportantDateModal(true)}
+              className="btn btn-sm btn-secondary"
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
           </div>
           <div className="space-y-3">
             {getUpcomingDates().length > 0 ? (
@@ -523,6 +554,13 @@ const StudentDashboard = ({ user, userProfile }) => {
         onSave={handleSaveMeeting}
         editingMeeting={editingMeeting}
         userProfile={{ id: user?.uid, name: user?.displayName, email: user?.email }}
+      />
+
+      {/* Important Date Modal */}
+      <ImportantDateModal
+        isOpen={showImportantDateModal}
+        onClose={() => setShowImportantDateModal(false)}
+        onSave={handleAddImportantDate}
       />
     </DashboardGrid>
   );
