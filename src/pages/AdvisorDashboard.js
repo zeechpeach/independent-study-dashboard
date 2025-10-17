@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, TrendingUp, Target } from 'lucide-react';
+import { Users, Calendar, Target } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
@@ -7,12 +7,12 @@ import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
 import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
-import AdvisorProgressReports from '../components/advisor/AdvisorProgressReports';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
-import { getAdvisorDashboardData } from '../services/firebase';
+import { getAdvisorDashboardData, getStudentsByAdvisor } from '../services/firebase';
 import AdminDashboard from '../components/admin/AdminDashboard';
+import AdvisorNotesSection from '../components/advisor/AdvisorNotesSection';
 
 /**
  * AdvisorDashboard - Main advisor dashboard page
@@ -25,10 +25,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [showStudentList, setShowStudentList] = useState(false);
   const [showImportantDates, setShowImportantDates] = useState(false);
   const [showActiveGoals, setShowActiveGoals] = useState(false);
-  const [showProgressReports, setShowProgressReports] = useState(false);
   const [showStudentDetail, setShowStudentDetail] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const [students, setStudents] = useState([]);
   const [error, setError] = useState(null);
   
   // Feature flag checks
@@ -49,8 +49,12 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getAdvisorDashboardData(advisorEmail);
+        const [data, studentsList] = await Promise.all([
+          getAdvisorDashboardData(advisorEmail),
+          getStudentsByAdvisor(advisorEmail)
+        ]);
         setDashboardData(data);
+        setStudents(studentsList);
       } catch (err) {
         console.error('Error fetching advisor dashboard data:', err);
         setError('Failed to load dashboard data');
@@ -143,16 +147,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
-  // Show progress reports if requested
-  if (showProgressReports) {
-    return (
-      <AdvisorProgressReports
-        advisorEmail={advisorEmail}
-        userProfile={userProfile}
-        onBack={() => setShowProgressReports(false)}
-      />
-    );
-  }
+
 
   // Show student detail if requested
   if (showStudentDetail && selectedStudent) {
@@ -246,57 +241,21 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                 <Calendar className="w-4 h-4" />
                 Important Dates
               </button>
-              <button 
-                onClick={() => setShowProgressReports(true)}
-                className="btn btn-secondary"
-              >
-                <TrendingUp className="w-4 h-4" />
-                Progress Reports
-              </button>
             </AdvisorGridContainer>
           </div>
 
-          {/* Dashboard Overview */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">Dashboard Overview</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium">
-                    {statsData.activeGoals} active goals across all students
-                  </span>
-                </div>
-                {statsData.overdueItems > 0 && (
-                  <p className="text-xs text-red-600 mt-1">
-                    {statsData.overdueItems} goal{statsData.overdueItems > 1 ? 's' : ''} overdue
-                  </p>
-                )}
-              </div>
 
-
-              {statsData.totalStudents === 0 && (
-                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm font-medium">
-                      No students assigned yet
-                    </span>
-                  </div>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Students will appear when they select you as their advisor during onboarding
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Meeting Management */}
           <AdvisorMeetingsPanel
             advisorEmail={advisorEmail}
             userProfile={userProfile}
+          />
+
+          {/* Advisor Notes */}
+          <AdvisorNotesSection
+            advisorId={user?.uid}
+            students={students}
           />
         </AdvisorDashboardGrid.Main>
 
