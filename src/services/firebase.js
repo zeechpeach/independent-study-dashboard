@@ -1225,3 +1225,63 @@ export const getUserActionItems = async (userId) => {
     throw error;
   }
 };
+
+/**
+ * Note Management Functions
+ */
+
+export const createNote = async (userId, noteData) => {
+  try {
+    const noteRef = await addDoc(collection(db, 'notes'), {
+      userId,
+      title: noteData.title || 'Untitled Note',
+      content: noteData.content || '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return noteRef.id;
+  } catch (error) {
+    console.error('Error creating note:', error);
+    throw error;
+  }
+};
+
+export const updateNote = async (noteId, noteData) => {
+  try {
+    const noteRef = doc(db, 'notes', noteId);
+    await updateDoc(noteRef, {
+      ...noteData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating note:', error);
+    throw error;
+  }
+};
+
+export const deleteNote = async (noteId) => {
+  try {
+    await deleteDoc(doc(db, 'notes', noteId));
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    throw error;
+  }
+};
+
+export const getUserNotes = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'notes'),
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting user notes:', error);
+    throw error;
+  }
+};

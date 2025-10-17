@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, TrendingUp, BookOpen, Target } from 'lucide-react';
+import { Users, Calendar, TrendingUp, Target } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
@@ -200,31 +200,16 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       </div>
 
       {/* Stats Overview */}
-      <AdvisorGridContainer cols={2}>
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
-              <p className="text-xs text-gray-500">{statsData.activeStudents} active</p>
-            </div>
-            <Users className="w-8 h-8 text-blue-600" />
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">Total Students</p>
+            <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
+            <p className="text-xs text-gray-500">{statsData.activeStudents} active</p>
           </div>
+          <Users className="w-8 h-8 text-blue-600" />
         </div>
-
-
-
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Needs Review</p>
-              <p className="text-2xl font-bold text-red-600">{statsData.pendingReflections}</p>
-              <p className="text-xs text-gray-500">pending reflections</p>
-            </div>
-            <BookOpen className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
-      </AdvisorGridContainer>
+      </div>
 
       {/* Main Dashboard Grid */}
       <AdvisorDashboardGrid>

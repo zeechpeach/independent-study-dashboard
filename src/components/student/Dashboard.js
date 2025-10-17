@@ -385,12 +385,14 @@ const StudentDashboard = ({ user, userProfile }) => {
               onClick={() => setShowActionPlan(true)}
               className="btn btn-sm btn-secondary"
             >
-              <Plus className="w-4 h-4" />
-              Add Item
+              View All
             </button>
           </div>
 
           <div className="space-y-4">
+            {/* Quick Add Form */}
+            <QuickAddActionItem onAdd={handleCreateActionItem} />
+
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
@@ -436,12 +438,7 @@ const StudentDashboard = ({ user, userProfile }) => {
               <div className="p-6 bg-gray-50 rounded-lg text-center">
                 <CheckSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 mb-3">No action items yet</p>
-                <button
-                  onClick={() => setShowActionPlan(true)}
-                  className="btn btn-primary btn-sm"
-                >
-                  Create Your First Item
-                </button>
+                <p className="text-xs text-gray-500">Use the form above to add your first item</p>
               </div>
             )}
           </div>
@@ -563,6 +560,53 @@ const StudentDashboard = ({ user, userProfile }) => {
         onSave={handleAddImportantDate}
       />
     </DashboardGrid>
+  );
+};
+
+// Quick Add Action Item Component
+const QuickAddActionItem = ({ onAdd }) => {
+  const [text, setText] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+
+    setIsAdding(true);
+    try {
+      await onAdd({
+        text: text.trim(),
+        completed: false,
+        struggling: false
+      });
+      setText('');
+    } catch (error) {
+      console.error('Error adding action item:', error);
+      alert('Failed to add action item. Please try again.');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Add a new action item..."
+        className="flex-1 p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        disabled={isAdding}
+      />
+      <button
+        type="submit"
+        disabled={!text.trim() || isAdding}
+        className="btn btn-primary btn-sm whitespace-nowrap"
+      >
+        <Plus className="w-4 h-4" />
+        {isAdding ? 'Adding...' : 'Add'}
+      </button>
+    </form>
   );
 };
 
