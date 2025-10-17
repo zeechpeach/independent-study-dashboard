@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Save, Trash2, Edit2, Plus, X } from 'lucide-react';
 import { getUserNotes, createNote, updateNote, deleteNote } from '../../services/firebase';
 
@@ -16,11 +16,7 @@ const NotesSection = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchNotes();
-  }, [userId]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     if (!userId) return;
     try {
       setLoading(true);
@@ -31,7 +27,11 @@ const NotesSection = ({ userId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const handleCreateNote = () => {
     setIsCreating(true);
@@ -94,7 +94,7 @@ const NotesSection = ({ userId }) => {
   };
 
   const handleDeleteNote = async (noteId) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!window.confirm('Are you sure you want to delete this note?')) return;
 
     try {
       await deleteNote(noteId);
