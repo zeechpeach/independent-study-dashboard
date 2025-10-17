@@ -1285,3 +1285,78 @@ export const getUserNotes = async (userId) => {
     throw error;
   }
 };
+
+/**
+ * Advisor Note Management Functions
+ * Notes created by advisors and tagged to specific students
+ */
+
+export const createAdvisorNote = async (advisorId, noteData) => {
+  try {
+    const noteRef = await addDoc(collection(db, 'advisorNotes'), {
+      advisorId,
+      studentId: noteData.studentId,
+      studentName: noteData.studentName || '',
+      title: noteData.title || 'Untitled Note',
+      content: noteData.content || '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return noteRef.id;
+  } catch (error) {
+    console.error('Error creating advisor note:', error);
+    throw error;
+  }
+};
+
+export const updateAdvisorNote = async (noteId, noteData) => {
+  try {
+    const noteRef = doc(db, 'advisorNotes', noteId);
+    await updateDoc(noteRef, {
+      ...noteData,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating advisor note:', error);
+    throw error;
+  }
+};
+
+export const deleteAdvisorNote = async (noteId) => {
+  try {
+    await deleteDoc(doc(db, 'advisorNotes', noteId));
+  } catch (error) {
+    console.error('Error deleting advisor note:', error);
+    throw error;
+  }
+};
+
+export const getAdvisorNotes = async (advisorId, studentId = null) => {
+  try {
+    let q;
+    if (studentId) {
+      // Get notes for a specific student
+      q = query(
+        collection(db, 'advisorNotes'),
+        where('advisorId', '==', advisorId),
+        where('studentId', '==', studentId),
+        orderBy('updatedAt', 'desc')
+      );
+    } else {
+      // Get all notes for this advisor
+      q = query(
+        collection(db, 'advisorNotes'),
+        where('advisorId', '==', advisorId),
+        orderBy('updatedAt', 'desc')
+      );
+    }
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisor notes:', error);
+    throw error;
+  }
+};
