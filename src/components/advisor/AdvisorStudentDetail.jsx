@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Calendar, Target, MessageSquare } from 'lucide-react';
-import { getUserProfile, getUserGoals, getUserReflections, getUserMeetings } from '../../services/firebase';
+import { ArrowLeft, User, Mail, Target, CheckSquare, FileText } from 'lucide-react';
+import { getUserProfile, getUserActionItems, getUserNotes, getUserMeetings } from '../../services/firebase';
 import { meetingsService } from '../../services/meetingsService';
 
 /**
@@ -8,8 +8,8 @@ import { meetingsService } from '../../services/meetingsService';
  */
 const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) => {
   const [student, setStudent] = useState(null);
-  const [goals, setGoals] = useState([]);
-  const [reflections, setReflections] = useState([]);
+  const [actionItems, setActionItems] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [meetingCounts, setMeetingCounts] = useState({ completed: 0, missed: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,22 +28,22 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
         
         // If we have studentId, use it directly, otherwise we'd need to find by email
         let studentData = null;
-        let studentGoals = [];
-        let studentReflections = [];
+        let studentActionItems = [];
+        let studentNotes = [];
         let studentMeetings = [];
 
         if (studentId) {
-          [studentData, studentGoals, studentReflections, studentMeetings] = await Promise.all([
+          [studentData, studentActionItems, studentNotes, studentMeetings] = await Promise.all([
             getUserProfile(studentId),
-            getUserGoals(studentId),
-            getUserReflections(studentId),
+            getUserActionItems(studentId),
+            getUserNotes(studentId),
             getUserMeetings(studentId)
           ]);
         }
         
         setStudent(studentData || { name: studentName, email: studentEmail });
-        setGoals(studentGoals);
-        setReflections(studentReflections);
+        setActionItems(studentActionItems);
+        setNotes(studentNotes);
         
         // Calculate meeting attendance counts
         const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
@@ -98,17 +98,23 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
     );
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'overdue':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Just now';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    
+    return date.toLocaleDateString();
   };
 
   return (
@@ -167,83 +173,110 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
         </div>
       </div>
 
-      {/* Goals */}
+      {/* Action Items */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Current Goals ({goals.length})</h2>
+          <h2 className="card-title">Action Items ({actionItems.length})</h2>
         </div>
-        {goals.length > 0 ? (
+        {actionItems.length > 0 ? (
           <div className="space-y-3">
-            {goals.slice(0, 5).map((goal) => (
-              <div key={goal.id} className="p-3 border rounded-lg">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600">{actionItems.filter(item => !item.completed).length}</p>
+                <p className="text-xs text-gray-600">Active</p>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="text-2xl font-bold text-green-600">{actionItems.filter(item => item.completed).length}</p>
+                <p className="text-xs text-gray-600">Completed</p>
+              </div>
+              <div className="text-center p-3 bg-orange-50 rounded-lg">
+                <p className="text-2xl font-bold text-orange-600">{actionItems.filter(item => item.struggling && !item.completed).length}</p>
+                <p className="text-xs text-gray-600">Need Help</p>
+              </div>
+            </div>
+            {/* Action items list */}
+            {actionItems.slice(0, 5).map((item) => (
+              <div key={item.id} className={`p-3 rounded-lg border ${
+                item.struggling && !item.completed ? 'border-orange-300 bg-orange-50' : 
+                item.completed ? 'border-green-300 bg-green-50' : 
+                'border-gray-200 bg-gray-50'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{goal.title}</h3>
-                    {goal.description && (
-                      <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
+                    <p className={`text-sm ${item.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                      {item.text}
+                    </p>
+                    {item.struggling && !item.completed && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-orange-600 text-white text-xs rounded">
+                        Need Help
+                      </span>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>Due: {goal.targetDate}</span>
-                    </div>
+                    {item.completed && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-green-600 text-white text-xs rounded">
+                        Completed
+                      </span>
+                    )}
                   </div>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(goal.status)}`}>
-                    {goal.status.replace('_', ' ')}
-                  </span>
                 </div>
               </div>
             ))}
-            {goals.length > 5 && (
+            {actionItems.length > 5 && (
               <p className="text-sm text-gray-500 text-center">
-                And {goals.length - 5} more goals...
+                And {actionItems.length - 5} more action items...
               </p>
             )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <Target className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm">No goals set yet</p>
+            <CheckSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">No action items yet</p>
           </div>
         )}
       </div>
 
-      {/* Recent Reflections */}
+      {/* Notes */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Recent Reflections ({reflections.length})</h2>
+          <h2 className="card-title">Notes ({notes.length})</h2>
         </div>
-        {reflections.length > 0 ? (
+        {notes.length > 0 ? (
           <div className="space-y-3">
-            {reflections.slice(0, 3).map((reflection) => (
-              <div key={reflection.id} className="p-3 border rounded-lg">
+            {notes.slice(0, 5).map((note) => (
+              <div key={note.id} className="p-3 border rounded-lg bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="w-4 h-4 text-gray-500" />
-                      <span className="font-medium text-gray-900">{reflection.type}</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(reflection.createdAt?.toDate?.() || reflection.createdAt).toLocaleDateString()}
-                      </span>
+                      <FileText className="w-4 h-4 text-purple-500" />
+                      <span className="font-medium text-gray-900">{note.title || 'Untitled Note'}</span>
                     </div>
-                    {reflection.content && (
-                      <p className="text-sm text-gray-700 line-clamp-2">
-                        {reflection.content.substring(0, 150)}...
-                      </p>
+                    {note.content && (
+                      <div 
+                        className="text-sm text-gray-700 line-clamp-2 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: note.content.length > 150 
+                            ? note.content.substring(0, 150) + '...' 
+                            : note.content 
+                        }}
+                      />
                     )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Updated {formatTimeAgo(note.updatedAt)}
+                    </p>
                   </div>
                 </div>
               </div>
             ))}
-            {reflections.length > 3 && (
+            {notes.length > 5 && (
               <p className="text-sm text-gray-500 text-center">
-                And {reflections.length - 3} more reflections...
+                And {notes.length - 5} more notes...
               </p>
             )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm">No reflections submitted yet</p>
+            <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">No notes yet</p>
           </div>
         )}
       </div>
