@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Plus, CheckSquare } from 'lucide-react';
+import { Clock, Plus, CheckSquare } from 'lucide-react';
 import ActionPlan from './ActionPlan';
 import CalendlyEmbed from '../shared/CalendlyEmbed.jsx';
-import QuickActionCard from './QuickActionCard';
 import MeetingsCard from './MeetingsCard';
 import MeetingCreateModal from './MeetingCreateModal';
 import NotesSection from './NotesSection';
 import ImportantDateModal from './ImportantDateModal';
-import { SkeletonCard, SkeletonQuickAction } from '../ui/Skeleton';
-import DashboardGrid, { GridContainer } from '../shared/DashboardGrid';
+import { SkeletonCard } from '../ui/Skeleton';
+import DashboardGrid from '../shared/DashboardGrid';
 import useMeetings from '../../hooks/useMeetings';
 import { 
   getUserActionItems,
@@ -243,17 +242,6 @@ const StudentDashboard = ({ user, userProfile }) => {
             <div className="bg-gray-200 animate-pulse rounded h-5 w-64"></div>
           </div>
 
-          {/* Quick Actions Skeleton */}
-          <div className="space-y-4">
-            <div className="bg-gray-200 animate-pulse rounded h-6 w-32"></div>
-            <GridContainer cols={2}>
-              <SkeletonQuickAction />
-              <SkeletonQuickAction />
-              <SkeletonQuickAction />
-              <SkeletonQuickAction />
-            </GridContainer>
-          </div>
-
           {/* Goals Skeleton */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
@@ -349,29 +337,6 @@ const StudentDashboard = ({ user, userProfile }) => {
               Ready to continue your learning journey?
             </p>
           </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            Quick Actions
-          </h3>
-          <GridContainer cols={2}>
-            <QuickActionCard
-              icon={CheckSquare}
-              title="Action Plan"
-              subtitle="Manage your tasks and goals"
-              onClick={() => setShowActionPlan(true)}
-              isPrimary={true}
-            />
-            <QuickActionCard
-              icon={Calendar}
-              title="Log Meeting"
-              subtitle="Record a meeting with your advisor"
-              onClick={handleBookMeeting}
-            />
-          </GridContainer>
         </div>
 
         {/* Action Plan Summary */}
