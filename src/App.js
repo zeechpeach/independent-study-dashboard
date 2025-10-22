@@ -6,6 +6,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import AdvisorDashboard from './pages/AdvisorDashboard';
 import OnboardingForm from './components/shared/OnboardingForm';
 import AppShell from './components/shared/AppShell';
+import NutritionDemo from './pages/NutritionDemo';
 import { Button } from './components/ui';
 import { isAdvisorLayoutV2Enabled } from './config/featureFlags.ts';
 import { useRoleRedirect } from './hooks/useRoleRedirect';
@@ -18,6 +19,9 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+
+  // Check if we should show the demo page
+  const showDemo = window.location.search.includes('demo=nutrition');
 
   // Log build SHA if available
   React.useEffect(() => {
@@ -92,6 +96,11 @@ function App() {
 
   // Role-aware redirect hook - automatically redirects users based on their role
   useRoleRedirect(userProfile, setShowAdminDashboard);
+
+  // Show demo page if requested
+  if (showDemo) {
+    return <NutritionDemo />;
+  }
 
   // Show loading while checking auth state
   if (authLoading) {
