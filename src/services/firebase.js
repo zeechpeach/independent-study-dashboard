@@ -1359,4 +1359,136 @@ export const getAdvisorNotes = async (advisorId, studentId = null) => {
     console.error('Error getting advisor notes:', error);
     throw error;
   }
+}
+
+// ============================================================================
+// Nutrition Tracking Functions
+// ============================================================================
+
+/**
+ * Get user's saved foods
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} - Array of saved foods
+ */
+export const getUserSavedFoods = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'savedFoods'),
+      where('userId', '==', userId),
+      orderBy('name', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'get saved foods');
+  }
 };
+
+/**
+ * Save a food item (create or update)
+ * @param {string} userId - User ID
+ * @param {Object} foodData - Food data
+ * @param {string} foodId - Optional food ID for updating
+ * @returns {Promise<string>} - Food document ID
+ */
+export const saveFood = async (userId, foodData, foodId = null) => {
+  try {
+    const data = {
+      ...foodData,
+      userId,
+      updatedAt: serverTimestamp()
+    };
+
+    if (foodId) {
+      // Update existing food
+      await updateDoc(doc(db, 'savedFoods', foodId), data);
+      return foodId;
+    } else {
+      // Create new food
+      data.createdAt = serverTimestamp();
+      const docRef = await addDoc(collection(db, 'savedFoods'), data);
+      return docRef.id;
+    }
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'save food');
+  }
+};
+
+/**
+ * Delete a saved food
+ * @param {string} foodId - Food document ID
+ */
+export const deleteFood = async (foodId) => {
+  try {
+    await deleteDoc(doc(db, 'savedFoods', foodId));
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'delete food');
+  }
+};
+
+/**
+ * Add a meal entry
+ * @param {string} userId - User ID
+ * @param {Object} entryData - Meal entry data
+ * @returns {Promise<string>} - Entry document ID
+ */
+export const addMealEntry = async (userId, entryData) => {
+  try {
+    const data = {
+      ...entryData,
+      userId,
+      createdAt: serverTimestamp()
+    };
+    const docRef = await addDoc(collection(db, 'mealEntries'), data);
+    
+    // Update lastUsed timestamp for saved food if it exists
+    if (entryData.foodId) {
+      await updateDoc(doc(db, 'savedFoods', entryData.foodId), {
+        lastUsed: serverTimestamp()
+      });
+    }
+    
+    return docRef.id;
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'add meal entry');
+  }
+};
+
+/**
+ * Get user's meal entries for a specific date
+ * @param {string} userId - User ID
+ * @param {string} date - Date in YYYY-MM-DD format
+ * @returns {Promise<Array>} - Array of meal entries
+ */
+export const getUserMealEntries = async (userId, date) => {
+  try {
+    const q = query(
+      collection(db, 'mealEntries'),
+      where('userId', '==', userId),
+      where('date', '==', date),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'get meal entries');
+  }
+};
+
+/**
+ * Delete a meal entry
+ * @param {string} entryId - Meal entry document ID
+ */
+export const deleteMealEntry = async (entryId) => {
+  try {
+    await deleteDoc(doc(db, 'mealEntries', entryId));
+  } catch (error) {
+    throw enhanceFirebaseError(error, 'delete meal entry');
+  }
+}

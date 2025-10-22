@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Plus, CheckSquare } from 'lucide-react';
+import { Clock, Plus, CheckSquare, Apple } from 'lucide-react';
 import ActionPlan from './ActionPlan';
+import NutritionTracker from './NutritionTracker';
 import CalendlyEmbed from '../shared/CalendlyEmbed.jsx';
 import MeetingsCard from './MeetingsCard';
 import MeetingCreateModal from './MeetingCreateModal';
@@ -25,6 +26,7 @@ const StudentDashboard = ({ user, userProfile }) => {
   const [advisorInfo, setAdvisorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showActionPlan, setShowActionPlan] = useState(false);
+  const [showNutritionTracker, setShowNutritionTracker] = useState(false);
   const [showCalendlyEmbed, setShowCalendlyEmbed] = useState(false);
   const [showMeetingCreateModal, setShowMeetingCreateModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState(null);
@@ -323,6 +325,15 @@ const StudentDashboard = ({ user, userProfile }) => {
     );
   }
 
+  if (showNutritionTracker) {
+    return (
+      <NutritionTracker
+        user={user}
+        onBack={() => setShowNutritionTracker(false)}
+      />
+    );
+  }
+
   return (
     <DashboardGrid>
       {/* Main Content */}
@@ -411,6 +422,34 @@ const StudentDashboard = ({ user, userProfile }) => {
 
         {/* Notes Section */}
         <NotesSection userId={user?.uid} />
+
+        {/* Nutrition Tracker Card */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <Apple className="w-5 h-5 text-green-600" />
+              <h2 className="card-title">Nutrition Tracker</h2>
+            </div>
+            <button 
+              onClick={() => setShowNutritionTracker(true)}
+              className="btn btn-sm btn-secondary"
+            >
+              View All
+            </button>
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Track your daily nutrition and save your favorite foods for quick logging.
+            </p>
+            <button
+              onClick={() => setShowNutritionTracker(true)}
+              className="btn btn-primary w-full"
+            >
+              <Plus className="w-4 h-4" />
+              Log Today's Meals
+            </button>
+          </div>
+        </div>
       </DashboardGrid.Main>
 
       {/* Sidebar */}
