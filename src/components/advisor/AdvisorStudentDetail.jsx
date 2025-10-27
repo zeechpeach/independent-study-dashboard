@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Target, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, User, Mail, Target, CheckSquare, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { getUserProfile, getUserActionItems, getUserNotes, getUserMeetings } from '../../services/firebase';
 import { meetingsService } from '../../services/meetingsService';
 
@@ -13,6 +13,8 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
   const [meetingCounts, setMeetingCounts] = useState({ completed: 0, missed: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionItemsExpanded, setActionItemsExpanded] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(false);
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -176,7 +178,27 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
       {/* Action Items */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Action Items ({actionItems.length})</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="card-title">Action Items ({actionItems.length})</h2>
+            {actionItems.length > 5 && (
+              <button
+                onClick={() => setActionItemsExpanded(!actionItemsExpanded)}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+              >
+                {actionItemsExpanded ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Show All
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
         {actionItems.length > 0 ? (
           <div className="space-y-3">
@@ -196,7 +218,7 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
               </div>
             </div>
             {/* Action items list */}
-            {actionItems.slice(0, 5).map((item) => (
+            {(actionItemsExpanded ? actionItems : actionItems.slice(0, 5)).map((item) => (
               <div key={item.id} className={`p-3 rounded-lg border ${
                 item.struggling && !item.completed ? 'border-orange-300 bg-orange-50' : 
                 item.completed ? 'border-green-300 bg-green-50' : 
@@ -221,11 +243,6 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
                 </div>
               </div>
             ))}
-            {actionItems.length > 5 && (
-              <p className="text-sm text-gray-500 text-center">
-                And {actionItems.length - 5} more action items...
-              </p>
-            )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
@@ -238,40 +255,33 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
       {/* Notes */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Notes ({notes.length})</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="card-title">Notes ({notes.length})</h2>
+            {notes.length > 5 && (
+              <button
+                onClick={() => setNotesExpanded(!notesExpanded)}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+              >
+                {notesExpanded ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Show All
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
         {notes.length > 0 ? (
           <div className="space-y-3">
-            {notes.slice(0, 5).map((note) => (
-              <div key={note.id} className="p-3 border rounded-lg bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-purple-500" />
-                      <span className="font-medium text-gray-900">{note.title || 'Untitled Note'}</span>
-                    </div>
-                    {note.content && (
-                      <div 
-                        className="text-sm text-gray-700 line-clamp-2 prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: note.content.length > 150 
-                            ? note.content.substring(0, 150) + '...' 
-                            : note.content 
-                        }}
-                      />
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      Updated {formatTimeAgo(note.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {(notesExpanded ? notes : notes.slice(0, 5)).map((note) => (
+              <NoteItem key={note.id} note={note} formatTimeAgo={formatTimeAgo} />
             ))}
-            {notes.length > 5 && (
-              <p className="text-sm text-gray-500 text-center">
-                And {notes.length - 5} more notes...
-              </p>
-            )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
@@ -279,6 +289,47 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
             <p className="text-sm">No notes yet</p>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Individual note component with expand/collapse
+const NoteItem = ({ note, formatTimeAgo }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentPreview = note.content && note.content.length > 150 
+    ? note.content.substring(0, 150) + '...' 
+    : note.content;
+  const needsExpansion = note.content && note.content.length > 150;
+
+  return (
+    <div className="p-3 border rounded-lg bg-gray-50">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-4 h-4 text-purple-500" />
+            <span className="font-medium text-gray-900">{note.title || 'Untitled Note'}</span>
+          </div>
+          {note.content && (
+            <div 
+              className="text-sm text-gray-700 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ 
+                __html: isExpanded ? note.content : contentPreview
+              }}
+            />
+          )}
+          {needsExpansion && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs text-blue-600 hover:text-blue-800 mt-2"
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </button>
+          )}
+          <p className="text-xs text-gray-500 mt-2">
+            Updated {formatTimeAgo(note.updatedAt)}
+          </p>
+        </div>
       </div>
     </div>
   );

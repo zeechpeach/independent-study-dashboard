@@ -278,10 +278,10 @@ const ActionItem = ({ item, onToggleComplete, onToggleStruggling, onDelete }) =>
                   ? 'bg-orange-600 text-white hover:bg-orange-700'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
-              title={item.struggling ? 'Remove struggling flag' : 'Mark as struggling'}
+              title={item.struggling ? 'Remove help request' : 'Request help with this item'}
             >
               <AlertCircle className="w-3 h-3" />
-              {item.struggling ? 'Struggling' : 'Need Help?'}
+              {item.struggling ? 'Help Requested' : 'Need Help'}
             </button>
           </div>
         )}
