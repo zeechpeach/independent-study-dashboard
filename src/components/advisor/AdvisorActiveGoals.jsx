@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, ChevronLeft, User, Calendar, AlertCircle } from 'lucide-react';
+import { Target, ChevronLeft, User, AlertCircle } from 'lucide-react';
 import { getStudentsByAdvisor, getUserActionItems } from '../../services/firebase';
 
 /**
@@ -80,12 +80,6 @@ const AdvisorActiveGoals = ({ advisorEmail, userProfile, onBack }) => {
     }
     
     return 'bg-blue-50 border-blue-200 text-blue-800';
-  };
-
-  const formatDate = (dateValue) => {
-    if (!dateValue) return 'No deadline';
-    const date = dateValue?.toDate?.() || new Date(dateValue);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   if (loading) {
@@ -227,21 +221,17 @@ const AdvisorActiveGoals = ({ advisorEmail, userProfile, onBack }) => {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <h4 className="font-medium text-sm">{goal.title}</h4>
+                          <p className="text-sm text-gray-900">{goal.text || goal.title}</p>
                           {goal.description && (
-                            <p className="text-xs mt-1 opacity-80">{goal.description}</p>
+                            <p className="text-xs mt-1 text-gray-600">{goal.description}</p>
                           )}
-                          <div className="flex items-center gap-3 mt-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>{formatDate(goal.targetDate)}</span>
-                            </div>
-                            {goal.category && (
-                              <span className="px-2 py-0.5 bg-white bg-opacity-50 rounded">
+                          {goal.category && (
+                            <div className="mt-2">
+                              <span className="px-2 py-0.5 bg-white bg-opacity-50 rounded text-xs">
                                 {goal.category}
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                         {goal.struggling && (
                           <span className="text-xs font-medium px-2 py-1 bg-orange-600 text-white rounded">

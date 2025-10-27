@@ -53,8 +53,8 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
 
     setLoading(true);
     try {
-      // Use the date at noon (12:00 PM) to avoid timezone issues
-      const scheduledDateTime = new Date(`${formData.scheduledDate}T12:00:00`);
+      // Store the date at midnight UTC to work with day-only precision
+      const scheduledDateTime = new Date(`${formData.scheduledDate}T00:00:00Z`);
       
       const meetingData = {
         title: 'Meeting Log',
@@ -62,9 +62,9 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
         scheduledDate: scheduledDateTime.toISOString(),
         duration: 30, // Default 30 minutes
         meetingLink: '',
-        status: 'completed',  // Logged meetings are completed
+        status: 'scheduled',  // All logged meetings start as scheduled, not completed
         source: 'manual',
-        attendanceMarked: true,  // Auto-mark as attended
+        attendanceMarked: false,  // Don't auto-mark attendance - advisor needs to confirm
         studentSelfReported: true,  // Student logged this
         advisorFeedback: '',
         studentId: userProfile?.id || '', // Will be set by the service

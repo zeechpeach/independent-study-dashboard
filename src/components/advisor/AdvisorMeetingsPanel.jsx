@@ -63,9 +63,23 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
   const getFilteredMeetings = () => {
     switch (filter) {
       case 'upcoming':
-        return meetingsService.filterMeetings(meetings, 'upcoming');
+        // Only show future meetings that are actually upcoming (not logged meetings needing confirmation)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return meetings
+          .filter(meeting => {
+            const meetingDate = new Date(meeting.scheduledDate);
+            meetingDate.setHours(0, 0, 0, 0);
+            // Show only meetings that are in the future and have been confirmed (attendanceMarked = true)
+            // OR meetings that are truly upcoming (scheduled from booking systems, not manually logged)
+            return meetingDate >= today && (meeting.attendanceMarked || meeting.source !== 'manual');
+          })
+          .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
       case 'past':
-        return meetingsService.filterMeetings(meetings, 'past');
+        // Only show meetings where attendance has been marked (confirmed by advisor)
+        return meetings
+          .filter(meeting => meeting.attendanceMarked)
+          .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
       case 'needs-attention':
         return meetingsService.getMeetingsNeedingAttention(meetings);
       default:
@@ -190,7 +204,13 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
 const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
   const isToday = meetingsService.isMeetingToday(meeting);
   const isOverdue = meetingsService.isMeetingOverdue(meeting);
-  const isPast = new Date(meeting.scheduledDate) < new Date();
+  
+  // Check if past using day-level precision
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const meetingDate = new Date(meeting.scheduledDate);
+  meetingDate.setHours(0, 0, 0, 0);
+  const isPast = meetingDate < today;
 
   const getStatusColor = () => {
     if (meeting.status === 'completed') return 'bg-green-50 border-green-200';

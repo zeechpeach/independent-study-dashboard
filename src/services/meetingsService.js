@@ -50,31 +50,36 @@ export const meetingsService = {
     }
   },
 
-  // Filter meetings by status and date
+  // Filter meetings by status and date (day-level precision)
   filterMeetings(meetings, filter = 'upcoming') {
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     switch (filter) {
       case 'upcoming':
         return meetings
-          .filter(meeting => new Date(meeting.scheduledDate) >= now)
+          .filter(meeting => {
+            const meetingDate = new Date(meeting.scheduledDate);
+            meetingDate.setHours(0, 0, 0, 0);
+            return meetingDate >= today;
+          })
           .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
       
       case 'past':
         return meetings
-          .filter(meeting => new Date(meeting.scheduledDate) < now)
+          .filter(meeting => {
+            const meetingDate = new Date(meeting.scheduledDate);
+            meetingDate.setHours(0, 0, 0, 0);
+            return meetingDate < today;
+          })
           .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
       
       case 'today':
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
         return meetings
           .filter(meeting => {
             const meetingDate = new Date(meeting.scheduledDate);
-            return meetingDate >= today && meetingDate < tomorrow;
+            meetingDate.setHours(0, 0, 0, 0);
+            return meetingDate.getTime() === today.getTime();
           })
           .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
       
@@ -83,15 +88,13 @@ export const meetingsService = {
     }
   },
 
-  // Format meeting data for display
+  // Format meeting data for display (date only, no time)
   formatMeetingDate(dateString) {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
+      day: 'numeric'
     });
   },
 
@@ -103,12 +106,14 @@ export const meetingsService = {
     return today.toDateString() === meetingDate.toDateString();
   },
 
-  // Check if a meeting is overdue
+  // Check if a meeting is overdue (day-level precision)
   isMeetingOverdue(meeting) {
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const meetingDate = new Date(meeting.scheduledDate);
+    meetingDate.setHours(0, 0, 0, 0);
     
-    return meetingDate < now && meeting.status !== 'completed' && meeting.status !== 'cancelled';
+    return meetingDate < today && meeting.status !== 'completed' && meeting.status !== 'cancelled';
   },
 
   // Mark attendance for a meeting (advisor function)
@@ -158,21 +163,17 @@ export const meetingsService = {
   },
 
   // Get meetings that need attention (for advisors)
+  // All logged meetings appear here until advisor manually confirms attendance
   getMeetingsNeedingAttention(meetings) {
-    const now = new Date();
     return meetings.filter(meeting => {
       // Skip cancelled meetings
       if (meeting.status === 'cancelled') return false;
       
-      // Skip meetings where attendance has been confirmed
+      // Skip meetings where attendance has already been confirmed by advisor
       if (meeting.attendanceMarked) return false;
       
-      // Meetings that are past their scheduled time and attendance hasn't been marked
-      const isPastAndNotMarked = meeting.status === 'scheduled' && 
-                                 !meeting.attendanceMarked && 
-                                 new Date(meeting.scheduledDate) < now;
-      
-      return isPastAndNotMarked;
+      // All scheduled meetings (logged by students) that haven't been confirmed by advisor
+      return meeting.status === 'scheduled' && !meeting.attendanceMarked;
     });
   },
 
