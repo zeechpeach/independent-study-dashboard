@@ -281,7 +281,7 @@ const ActionItem = ({ item, onToggleComplete, onToggleStruggling, onDelete }) =>
               title={item.struggling ? 'Remove help request' : 'Request help with this item'}
             >
               <AlertCircle className="w-3 h-3" />
-              {item.struggling ? 'Need Help' : 'Need Help'}
+              {item.struggling ? 'Help Requested' : 'Need Help'}
             </button>
           </div>
         )}

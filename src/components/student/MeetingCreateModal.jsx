@@ -53,8 +53,8 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
 
     setLoading(true);
     try {
-      // Store the date at midnight UTC to work with day-only precision
-      const scheduledDateTime = new Date(`${formData.scheduledDate}T00:00:00Z`);
+      // Store the date at midnight local time to work with day-only precision
+      const scheduledDateTime = new Date(`${formData.scheduledDate}T00:00:00`);
       
       const meetingData = {
         title: 'Meeting Log',
