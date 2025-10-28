@@ -19,7 +19,6 @@ const AdvisorMeetingLogModal = ({
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showOverrideWarning, setShowOverrideWarning] = useState(false);
 
   // Initialize form data when modal opens
   useEffect(() => {
@@ -31,7 +30,6 @@ const AdvisorMeetingLogModal = ({
         scheduledDate: today
       });
       setErrors({});
-      setShowOverrideWarning(false);
     }
   }, [isOpen, selectedStudentId]);
 
@@ -68,7 +66,6 @@ const AdvisorMeetingLogModal = ({
         scheduledDate: today
       });
       setErrors({});
-      setShowOverrideWarning(false);
       onClose();
     } catch (error) {
       console.error('Error creating advisor meeting log:', error);
