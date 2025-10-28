@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Circle, Plus, Trash2, User, AlertCircle } from 'lucide-react';
 import { createAdvisorTodo, updateAdvisorTodo, deleteAdvisorTodo, getAdvisorTodos } from '../../services/firebase';
 
@@ -17,7 +17,9 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
     completed: false
   });
 
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
+    if (!advisorId) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -29,14 +31,11 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [advisorId]);
 
   useEffect(() => {
-    if (advisorId) {
-      fetchTodos();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advisorId]);
+    fetchTodos();
+  }, [fetchTodos]);
 
   const handleAddTodo = async (e) => {
     e.preventDefault();
