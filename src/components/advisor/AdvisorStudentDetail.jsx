@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Target, CheckSquare, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, User, Mail, Target, CheckSquare, FileText, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { getUserProfile, getUserActionItems, getUserNotes, getUserMeetings } from '../../services/firebase';
 import { meetingsService } from '../../services/meetingsService';
+import AdvisorMeetingLogModal from './AdvisorMeetingLogModal';
 
 /**
  * AdvisorStudentDetail - Detailed view of a specific student for advisors
  */
-const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) => {
+const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, userProfile }) => {
   const [student, setStudent] = useState(null);
   const [actionItems, setActionItems] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -15,6 +16,7 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
   const [error, setError] = useState(null);
   const [actionItemsExpanded, setActionItemsExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -60,6 +62,26 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
 
     fetchStudentDetails();
   }, [studentId, studentEmail, studentName]);
+
+  const handleLogMeeting = async (meetingStudentId, meetingDate) => {
+    try {
+      // Use the provided studentId (from modal) which matches this component's studentId
+      await meetingsService.createAdvisorMeetingLog(
+        meetingStudentId,
+        meetingDate,
+        userProfile?.id,
+        userProfile?.name || userProfile?.email
+      );
+      
+      // Refresh student details to update meeting counts
+      const studentMeetings = await getUserMeetings(meetingStudentId);
+      const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
+      setMeetingCounts(counts);
+    } catch (error) {
+      console.error('Error logging meeting:', error);
+      throw error;
+    }
+  };
 
   if (loading) {
     return (
@@ -122,17 +144,26 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <button 
-          onClick={onBack}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{student?.name || studentName}</h1>
-          <p className="text-gray-600">Student Progress Overview</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{student?.name || studentName}</h1>
+            <p className="text-gray-600">Student Progress Overview</p>
+          </div>
         </div>
+        <button
+          onClick={() => setShowLogModal(true)}
+          className="btn btn-primary flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Log Meeting
+        </button>
       </div>
 
       {/* Student Info */}
@@ -303,6 +334,22 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
           </div>
         )}
       </div>
+
+      {/* Meeting Log Modal */}
+      {studentId && (
+        <AdvisorMeetingLogModal
+          isOpen={showLogModal}
+          onClose={() => setShowLogModal(false)}
+          onSave={handleLogMeeting}
+          students={[{ 
+            id: studentId, 
+            name: student?.name || studentName, 
+            email: student?.email || studentEmail 
+          }]}
+          selectedStudentId={studentId}
+          userProfile={userProfile}
+        />
+      )}
     </div>
   );
 };

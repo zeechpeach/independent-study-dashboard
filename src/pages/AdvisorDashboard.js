@@ -156,6 +156,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         studentId={selectedStudent.id}
         studentName={selectedStudent.name}
         studentEmail={selectedStudent.email}
+        userProfile={userProfile}
         onBack={() => {
           setShowStudentDetail(false);
           setSelectedStudent(null);

@@ -163,6 +163,26 @@ const MeetingItem = ({
               <span>You marked this meeting as {meeting.status}</span>
             </div>
           )}
+
+          {/* Show when advisor has logged this meeting */}
+          {meeting.loggedBy === 'advisor' && (
+            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-xs text-blue-800 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                <span className="font-medium">Logged by your advisor</span>
+              </div>
+            </div>
+          )}
+
+          {/* Show when meeting was overridden */}
+          {meeting.overriddenBy && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="text-xs text-yellow-800 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                <span>Your log for this date was replaced by your advisor's entry</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 ml-3">

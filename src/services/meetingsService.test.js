@@ -2,7 +2,8 @@ import { meetingsService } from './meetingsService';
 
 // Mock the firebase functions
 jest.mock('./firebase', () => ({
-  updateMeeting: jest.fn()
+  updateMeeting: jest.fn(),
+  createAdvisorMeetingLog: jest.fn()
 }));
 
 describe('meetingsService', () => {
@@ -64,6 +65,43 @@ describe('meetingsService', () => {
         studentSelfReported: true,
         studentAttendanceMarkedAt: expect.any(String)
       }));
+    });
+  });
+
+  describe('createAdvisorMeetingLog', () => {
+    it('should call createAdvisorMeetingLog with correct meeting data', async () => {
+      const { createAdvisorMeetingLog } = require('./firebase');
+      createAdvisorMeetingLog.mockResolvedValue('meeting123');
+
+      const studentId = 'student1';
+      const meetingDate = '2024-03-15';
+      const advisorId = 'advisor1';
+      const advisorName = 'Dr. Smith';
+
+      const meetingId = await meetingsService.createAdvisorMeetingLog(
+        studentId,
+        meetingDate,
+        advisorId,
+        advisorName
+      );
+
+      expect(createAdvisorMeetingLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          studentId: studentId,
+          scheduledDate: expect.stringContaining('2024-03-15'),
+          status: 'completed',
+          source: 'advisor-manual',
+          attendanceMarked: true,
+          studentAttended: true,
+          advisorAttended: true,
+          title: 'Meeting Log',
+          description: expect.stringContaining(advisorName),
+          attendanceNotes: expect.stringContaining(advisorName)
+        }),
+        advisorId
+      );
+
+      expect(meetingId).toBe('meeting123');
     });
   });
 });
