@@ -15,7 +15,8 @@ const AdvisorMeetingLogModal = ({
 }) => {
   const [formData, setFormData] = useState({
     studentId: selectedStudentId || '',
-    scheduledDate: ''
+    scheduledDate: '',
+    attended: true
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,8 @@ const AdvisorMeetingLogModal = ({
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         studentId: selectedStudentId || '',
-        scheduledDate: today
+        scheduledDate: today,
+        attended: true
       });
       setErrors({});
     }
@@ -57,13 +59,14 @@ const AdvisorMeetingLogModal = ({
 
     setLoading(true);
     try {
-      await onSave(formData.studentId, formData.scheduledDate);
+      await onSave(formData.studentId, formData.scheduledDate, formData.attended);
       
       // Reset form
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         studentId: selectedStudentId || '',
-        scheduledDate: today
+        scheduledDate: today,
+        attended: true
       });
       setErrors({});
       onClose();
@@ -173,6 +176,32 @@ const AdvisorMeetingLogModal = ({
               When did the meeting take place?
             </p>
           </div>
+
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <input
+              type="checkbox"
+              id="attended"
+              checked={formData.attended}
+              onChange={(e) => handleInputChange('attended', e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="attended" className="text-sm font-medium text-gray-700 cursor-pointer">
+              Student attended the meeting
+            </label>
+          </div>
+          {!formData.attended && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5" />
+                <div className="text-sm text-orange-800">
+                  <p className="font-medium">Marking as Missed</p>
+                  <p>
+                    This meeting will be logged as missed or no-show in the student's attendance record.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {selectedStudent && formData.scheduledDate && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">

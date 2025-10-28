@@ -245,10 +245,13 @@ export const meetingsService = {
 
   // Create meeting log on behalf of student (advisor function)
   // Automatically handles overriding student logs for the same date
-  async createAdvisorMeetingLog(studentId, meetingDate, advisorId, advisorName) {
+  async createAdvisorMeetingLog(studentId, meetingDate, advisorId, advisorName, attended = true) {
     try {
       // Store the date at midnight local time to work with day-level precision
       const scheduledDateTime = new Date(`${meetingDate}T00:00:00`);
+      
+      // Determine status based on attendance
+      const status = attended ? 'completed' : 'no-show';
       
       const meetingData = {
         title: 'Meeting Log',
@@ -256,12 +259,12 @@ export const meetingsService = {
         scheduledDate: scheduledDateTime.toISOString(),
         duration: 30, // Default 30 minutes
         meetingLink: '',
-        status: 'completed',  // Advisor logs are marked as completed
+        status: status,
         source: 'advisor-manual',
         attendanceMarked: true,  // Advisor has confirmed this meeting happened
-        studentAttended: true,   // Assumption: if advisor is logging, student attended
+        studentAttended: attended,
         advisorAttended: true,
-        attendanceNotes: `Logged by ${advisorName}`,
+        attendanceNotes: `Logged by ${advisorName}${attended ? '' : ' - Student did not attend'}`,
         attendanceMarkedAt: new Date().toISOString(),
         studentId: studentId,
         advisorFeedback: ''
