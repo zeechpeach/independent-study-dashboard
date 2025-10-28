@@ -35,7 +35,11 @@ export const useMeetings = (userId) => {
         }
       }
       
-      setMeetings(updatedMeetings);
+      // Filter out meetings that have been overridden by advisor
+      // But keep them in the raw list for audit purposes
+      const effectiveMeetings = updatedMeetings.filter(meeting => !meeting.overriddenBy);
+      
+      setMeetings(effectiveMeetings);
     } catch (err) {
       console.error('Error fetching meetings:', err);
       setError('Failed to load meetings');

@@ -2,7 +2,8 @@ import {
   createMeeting, 
   updateMeeting, 
   getUserMeetings,
-  getAllMeetings 
+  getAllMeetings,
+  createAdvisorMeetingLog
 } from './firebase';
 
 /**
@@ -240,6 +241,37 @@ export const meetingsService = {
     });
 
     return counts;
+  },
+
+  // Create meeting log on behalf of student (advisor function)
+  // Automatically handles overriding student logs for the same date
+  async createAdvisorMeetingLog(studentId, meetingDate, advisorId, advisorName) {
+    try {
+      // Store the date at midnight local time to work with day-level precision
+      const scheduledDateTime = new Date(`${meetingDate}T00:00:00`);
+      
+      const meetingData = {
+        title: 'Meeting Log',
+        description: `Meeting logged by advisor ${advisorName}`,
+        scheduledDate: scheduledDateTime.toISOString(),
+        duration: 30, // Default 30 minutes
+        meetingLink: '',
+        status: 'completed',  // Advisor logs are marked as completed
+        source: 'advisor-manual',
+        attendanceMarked: true,  // Advisor has confirmed this meeting happened
+        studentAttended: true,   // Assumption: if advisor is logging, student attended
+        advisorAttended: true,
+        attendanceNotes: `Logged by ${advisorName}`,
+        attendanceMarkedAt: new Date().toISOString(),
+        studentId: studentId,
+        advisorFeedback: ''
+      };
+      
+      return await createAdvisorMeetingLog(meetingData, advisorId);
+    } catch (error) {
+      console.error('Error creating advisor meeting log:', error);
+      throw error;
+    }
   }
 };
 

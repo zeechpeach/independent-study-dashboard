@@ -388,6 +388,7 @@ export const createMeeting = async (meetingData) => {
   try {
     const docRef = await addDoc(collection(db, 'meetings'), {
       ...meetingData,
+      loggedBy: meetingData.loggedBy || 'student', // Default to student if not specified
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -424,6 +425,65 @@ export const getUserMeetings = async (userId) => {
     }));
   } catch (error) {
     console.error('Error getting user meetings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a meeting log on behalf of a student (advisor function)
+ * Checks for existing student meetings on the same date and marks them as overridden
+ * @param {Object} meetingData - Meeting data including studentId, scheduledDate, etc.
+ * @param {string} advisorId - ID of the advisor creating the log
+ * @returns {string} - ID of the created meeting
+ */
+export const createAdvisorMeetingLog = async (meetingData, advisorId) => {
+  try {
+    const { studentId, scheduledDate } = meetingData;
+    
+    // Get the date at midnight for comparison (day-level precision)
+    const meetingDateObj = new Date(scheduledDate);
+    meetingDateObj.setHours(0, 0, 0, 0);
+    const startOfDay = meetingDateObj.toISOString();
+    
+    // Calculate end of day
+    const endDateObj = new Date(meetingDateObj);
+    endDateObj.setHours(23, 59, 59, 999);
+    const endOfDay = endDateObj.toISOString();
+    
+    // Check for existing student meetings on the same date
+    const q = query(
+      collection(db, 'meetings'),
+      where('studentId', '==', studentId),
+      where('scheduledDate', '>=', startOfDay),
+      where('scheduledDate', '<=', endOfDay),
+      where('loggedBy', '==', 'student')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    // Mark any existing student meetings as overridden
+    const updatePromises = querySnapshot.docs.map(doc => 
+      updateDoc(doc.ref, {
+        overriddenBy: advisorId,
+        overriddenAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+    
+    await Promise.all(updatePromises);
+    
+    // Create the advisor's meeting log
+    const docRef = await addDoc(collection(db, 'meetings'), {
+      ...meetingData,
+      loggedBy: 'advisor',
+      advisorId: advisorId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating advisor meeting log:', error);
     throw error;
   }
 };

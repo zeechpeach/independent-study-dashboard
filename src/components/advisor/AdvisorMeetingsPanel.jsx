@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, User, CheckCircle, AlertCircle, Users } from 'lucide-react';
+import { Calendar, Clock, User, CheckCircle, AlertCircle, Users, Plus } from 'lucide-react';
 import { meetingsService } from '../../services/meetingsService';
 import { getStudentsByAdvisor } from '../../services/firebase';
+import AdvisorMeetingLogModal from './AdvisorMeetingLogModal';
 
 /**
  * Component for advisors to manage meetings - mark attendance and provide feedback
@@ -12,6 +13,7 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('upcoming'); // upcoming, past, needs-attention
+  const [showLogModal, setShowLogModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -58,7 +60,22 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
     }
   };
 
-
+  const handleLogMeeting = async (studentId, meetingDate) => {
+    try {
+      await meetingsService.createAdvisorMeetingLog(
+        studentId,
+        meetingDate,
+        userProfile.id,
+        userProfile.name || advisorEmail
+      );
+      
+      // Refresh data
+      await fetchData();
+    } catch (error) {
+      console.error('Error logging meeting:', error);
+      throw error; // Let the modal handle the error display
+    }
+  };
 
   const getFilteredMeetings = () => {
     switch (filter) {
@@ -77,8 +94,9 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
           .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
       case 'past':
         // Only show meetings where attendance has been marked (confirmed by advisor)
+        // Filter out meetings that were overridden
         return meetings
-          .filter(meeting => meeting.attendanceMarked)
+          .filter(meeting => meeting.attendanceMarked && !meeting.overriddenBy)
           .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
       case 'needs-attention':
         return meetingsService.getMeetingsNeedingAttention(meetings);
@@ -139,9 +157,18 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
               <Calendar className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-semibold">Meeting Management</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">{students.length} students</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">{students.length} students</span>
+              </div>
+              <button
+                onClick={() => setShowLogModal(true)}
+                className="btn btn-sm btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Log Meeting
+              </button>
             </div>
           </div>
 
@@ -196,6 +223,13 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
         </div>
       </div>
 
+      <AdvisorMeetingLogModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+        onSave={handleLogMeeting}
+        students={students}
+        userProfile={userProfile}
+      />
     </>
   );
 };
