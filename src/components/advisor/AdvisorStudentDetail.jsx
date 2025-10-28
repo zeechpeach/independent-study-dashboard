@@ -151,7 +151,7 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack }) 
           </div>
           <div className="pt-2">
             <a
-              href={`mailto:${student?.email || studentEmail}`}
+              href={`mailto:${encodeURIComponent(student?.email || studentEmail)}`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               title={`Send email to ${student?.email || studentEmail}`}
             >

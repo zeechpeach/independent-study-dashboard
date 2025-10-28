@@ -15,7 +15,7 @@ describe('StudentProfile - Email Student Integration', () => {
     
     const { container } = render(
       <a
-        href={`mailto:${testEmail}`}
+        href={`mailto:${encodeURIComponent(testEmail)}`}
         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         title={`Send email to ${testEmail}`}
       >
@@ -25,7 +25,7 @@ describe('StudentProfile - Email Student Integration', () => {
     
     const emailButton = screen.getByText('Email Student');
     expect(emailButton).toBeInTheDocument();
-    expect(emailButton).toHaveAttribute('href', `mailto:${testEmail}`);
+    expect(emailButton).toHaveAttribute('href', `mailto:${encodeURIComponent(testEmail)}`);
     expect(emailButton).toHaveAttribute('title', `Send email to ${testEmail}`);
   });
 
@@ -57,11 +57,11 @@ describe('StudentProfile - Email Student Integration', () => {
     
     emails.forEach(email => {
       const { container } = render(
-        <a href={`mailto:${email}`}>Email</a>
+        <a href={`mailto:${encodeURIComponent(email)}`}>Email</a>
       );
       
       const link = container.querySelector('a');
-      expect(link?.getAttribute('href')).toBe(`mailto:${email}`);
+      expect(link?.getAttribute('href')).toBe(`mailto:${encodeURIComponent(email)}`);
     });
   });
 });

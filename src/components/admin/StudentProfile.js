@@ -151,7 +151,7 @@ const StudentProfile = ({ student, onBack }) => {
           
           <div className="pt-2 border-t border-gray-200">
             <a
-              href={`mailto:${student.email}`}
+              href={`mailto:${encodeURIComponent(student.email)}`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               title={`Send email to ${student.email}`}
             >
