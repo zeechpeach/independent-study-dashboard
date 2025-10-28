@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, BookOpen, Target, Calendar, Clock, MessageSquare, AlertCircle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, User, BookOpen, Target, Calendar, Clock, MessageSquare, AlertCircle, TrendingUp, Mail } from 'lucide-react';
 import { getUserGoals, getUserReflections, getUserMeetings } from '../../services/firebase';
 
 const StudentProfile = ({ student, onBack }) => {
@@ -131,19 +131,35 @@ const StudentProfile = ({ student, onBack }) => {
           </div>
         </div>
         
-        <div className="grid grid-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Pathway</label>
-            <p className="text-gray-900 mt-1">{student.pathway || 'Not specified'}</p>
+        <div className="space-y-4">
+          <div className="grid grid-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Pathway</label>
+              <p className="text-gray-900 mt-1">{student.pathway || 'Not specified'}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Advisor</label>
+              <p className="text-gray-900 mt-1">{student.advisor || 'Not assigned'}</p>
+            </div>
+            <div className="col-span-2">
+              <label className="text-sm font-medium text-gray-700">Project Description</label>
+              <p className="text-gray-900 mt-1">
+                {student.projectDescription || 'No project description provided'}
+              </p>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Advisor</label>
-            <p className="text-gray-900 mt-1">{student.advisor || 'Not assigned'}</p>
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Project Description</label>
-            <p className="text-gray-900 mt-1">
-              {student.projectDescription || 'No project description provided'}
+          
+          <div className="pt-2 border-t border-gray-200">
+            <a
+              href={`mailto:${student.email}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              title={`Send email to ${student.email}`}
+            >
+              <Mail className="w-4 h-4" />
+              Email Student
+            </a>
+            <p className="text-xs text-gray-500 mt-1">
+              Opens your email client to send a message to the student's account email
             </p>
           </div>
         </div>
