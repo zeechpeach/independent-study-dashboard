@@ -63,17 +63,18 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
     fetchStudentDetails();
   }, [studentId, studentEmail, studentName]);
 
-  const handleLogMeeting = async (studentIdParam, meetingDate) => {
+  const handleLogMeeting = async (meetingStudentId, meetingDate) => {
     try {
+      // Use the provided studentId (from modal) which matches this component's studentId
       await meetingsService.createAdvisorMeetingLog(
-        studentIdParam,
+        meetingStudentId,
         meetingDate,
         userProfile?.id,
         userProfile?.name || userProfile?.email
       );
       
       // Refresh student details to update meeting counts
-      const studentMeetings = await getUserMeetings(studentIdParam);
+      const studentMeetings = await getUserMeetings(meetingStudentId);
       const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
       setMeetingCounts(counts);
     } catch (error) {
@@ -322,14 +323,20 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
       </div>
 
       {/* Meeting Log Modal */}
-      <AdvisorMeetingLogModal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
-        onSave={handleLogMeeting}
-        students={studentId ? [{ id: studentId, name: student?.name || studentName, email: student?.email || studentEmail }] : []}
-        selectedStudentId={studentId}
-        userProfile={userProfile}
-      />
+      {studentId && (
+        <AdvisorMeetingLogModal
+          isOpen={showLogModal}
+          onClose={() => setShowLogModal(false)}
+          onSave={handleLogMeeting}
+          students={[{ 
+            id: studentId, 
+            name: student?.name || studentName, 
+            email: student?.email || studentEmail 
+          }]}
+          selectedStudentId={studentId}
+          userProfile={userProfile}
+        />
+      )}
     </div>
   );
 };
