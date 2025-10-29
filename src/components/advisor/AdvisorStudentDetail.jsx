@@ -63,14 +63,15 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
     fetchStudentDetails();
   }, [studentId, studentEmail, studentName]);
 
-  const handleLogMeeting = async (meetingStudentId, meetingDate) => {
+  const handleLogMeeting = async (meetingStudentId, meetingDate, attended = true) => {
     try {
       // Use the provided studentId (from modal) which matches this component's studentId
       await meetingsService.createAdvisorMeetingLog(
         meetingStudentId,
         meetingDate,
         userProfile?.id,
-        userProfile?.name || userProfile?.email
+        userProfile?.name || userProfile?.email,
+        attended
       );
       
       // Refresh student details to update meeting counts

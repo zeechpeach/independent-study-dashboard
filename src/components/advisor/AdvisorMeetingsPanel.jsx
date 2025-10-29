@@ -60,13 +60,14 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
     }
   };
 
-  const handleLogMeeting = async (studentId, meetingDate) => {
+  const handleLogMeeting = async (studentId, meetingDate, attended = true) => {
     try {
       await meetingsService.createAdvisorMeetingLog(
         studentId,
         meetingDate,
         userProfile.id,
-        userProfile.name || advisorEmail
+        userProfile.name || advisorEmail,
+        attended
       );
       
       // Refresh data

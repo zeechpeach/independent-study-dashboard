@@ -8,6 +8,7 @@ import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
 import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
+import AdvisorTodoList from '../components/advisor/AdvisorTodoList';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData, getStudentsByAdvisor } from '../services/firebase';
@@ -261,6 +262,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </AdvisorDashboardGrid.Main>
 
         <AdvisorDashboardGrid.Sidebar>
+          <AdvisorTodoList 
+            advisorId={user?.uid}
+            students={students}
+          />
           <NeedsAttentionPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}

@@ -1420,3 +1420,57 @@ export const getAdvisorNotes = async (advisorId, studentId = null) => {
     throw error;
   }
 };
+
+// Advisor Todo functions
+export const createAdvisorTodo = async (todoData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'advisor_todos'), {
+      ...todoData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating advisor todo:', error);
+    throw error;
+  }
+};
+
+export const updateAdvisorTodo = async (todoId, data) => {
+  try {
+    await updateDoc(doc(db, 'advisor_todos', todoId), {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating advisor todo:', error);
+    throw error;
+  }
+};
+
+export const deleteAdvisorTodo = async (todoId) => {
+  try {
+    await deleteDoc(doc(db, 'advisor_todos', todoId));
+  } catch (error) {
+    console.error('Error deleting advisor todo:', error);
+    throw error;
+  }
+};
+
+export const getAdvisorTodos = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'advisor_todos'),
+      where('advisorId', '==', advisorId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting advisor todos:', error);
+    throw error;
+  }
+};
