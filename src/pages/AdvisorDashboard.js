@@ -224,23 +224,23 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       {/* Stats Overview - Compact Stats and Important Dates */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Compact stat cards - significantly reduced padding and sizing */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Total Students</p>
-              <p className="text-xl font-bold text-gray-900">{statsData.totalStudents}</p>
+              <p className="text-lg font-bold text-gray-900">{statsData.totalStudents}</p>
             </div>
-            <Users className="w-5 h-5 text-blue-600" />
+            <Users className="w-4 h-4 text-blue-600" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-3">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-green-700">Total Meeting Views</p>
-              <p className="text-xl font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
+              <p className="text-lg font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
             </div>
-            <Calendar className="w-5 h-5 text-green-600" />
+            <Calendar className="w-4 h-4 text-green-600" />
           </div>
         </div>
 
