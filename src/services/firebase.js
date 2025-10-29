@@ -625,12 +625,19 @@ export const getImportantDatesForAdvisors = async (advisorIds) => {
       });
     }
 
-    // Convert Map values to array and sort by date
-    const sortedDates = Array.from(allDates.values()).sort((a, b) => {
-      if (a.date < b.date) return -1;
-      if (a.date > b.date) return 1;
-      return 0;
-    });
+    // Convert Map values to array, filter out student-created dates, and sort by date
+    const sortedDates = Array.from(allDates.values())
+      .filter(date => {
+        // Exclude dates created by students (marked with scope='student' or createdBy without advisorId)
+        if (date.scope === 'student') return false;
+        if (date.createdBy && !date.advisorId) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+        return 0;
+      });
 
     return sortedDates;
   } catch (error) {

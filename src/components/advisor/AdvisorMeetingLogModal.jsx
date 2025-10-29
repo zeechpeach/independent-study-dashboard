@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, X, AlertCircle, Clock, User, CheckCircle, Users } from 'lucide-react';
+import { Calendar, X, AlertCircle, Clock, CheckCircle, Users } from 'lucide-react';
 import { getProjectGroupsByAdvisor } from '../../services/firebase';
 
 /**
  * Modal for advisors to manually log meetings on behalf of students
- * Supports single student, multiple students, or project group selection
+ * Supports student(s) or team selection
  * Handles override of student logs for the same date
  */
 const AdvisorMeetingLogModal = ({ 
@@ -15,7 +15,7 @@ const AdvisorMeetingLogModal = ({
   selectedStudentId = null,
   userProfile 
 }) => {
-  const [selectionMode, setSelectionMode] = useState('single'); // 'single', 'multiple', 'project'
+  const [selectionMode, setSelectionMode] = useState('students'); // 'students', 'team'
   const [projectGroups, setProjectGroups] = useState([]);
   const [formData, setFormData] = useState({
     studentId: selectedStudentId || '',
@@ -59,23 +59,19 @@ const AdvisorMeetingLogModal = ({
         title: 'Team Meeting'
       });
       setErrors({});
-      setSelectionMode(selectedStudentId ? 'single' : 'single');
+      setSelectionMode(selectedStudentId ? 'students' : 'students');
     }
   }, [isOpen, selectedStudentId]);
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (selectionMode === 'single' && !formData.studentId) {
-      newErrors.studentId = 'Please select a student';
-    }
-    
-    if (selectionMode === 'multiple' && formData.studentIds.length === 0) {
+    if (selectionMode === 'students' && formData.studentIds.length === 0) {
       newErrors.studentIds = 'Please select at least one student';
     }
     
-    if (selectionMode === 'project' && !formData.projectGroupId) {
-      newErrors.projectGroupId = 'Please select a project group';
+    if (selectionMode === 'team' && !formData.projectGroupId) {
+      newErrors.projectGroupId = 'Please select a team';
     }
     
     if (!formData.scheduledDate) {
@@ -98,11 +94,9 @@ const AdvisorMeetingLogModal = ({
       // Determine which students to log the meeting for
       let targetStudentIds = [];
       
-      if (selectionMode === 'single') {
-        targetStudentIds = [formData.studentId];
-      } else if (selectionMode === 'multiple') {
+      if (selectionMode === 'students') {
         targetStudentIds = formData.studentIds;
-      } else if (selectionMode === 'project') {
+      } else if (selectionMode === 'team') {
         const group = projectGroups.find(g => g.id === formData.projectGroupId);
         targetStudentIds = group?.studentIds || [];
       }
@@ -130,7 +124,7 @@ const AdvisorMeetingLogModal = ({
         title: 'Team Meeting'
       });
       setErrors({});
-      setSelectionMode('single');
+      setSelectionMode('students');
       onClose();
     } catch (error) {
       console.error('Error creating advisor meeting log:', error);
@@ -159,11 +153,9 @@ const AdvisorMeetingLogModal = ({
   };
 
   const getSelectedStudents = () => {
-    if (selectionMode === 'single' && formData.studentId) {
-      return students.filter(s => s.id === formData.studentId);
-    } else if (selectionMode === 'multiple') {
+    if (selectionMode === 'students') {
       return students.filter(s => formData.studentIds.includes(s.id));
-    } else if (selectionMode === 'project' && formData.projectGroupId) {
+    } else if (selectionMode === 'team' && formData.projectGroupId) {
       const group = projectGroups.find(g => g.id === formData.projectGroupId);
       if (group) {
         return students.filter(s => group.studentIds.includes(s.id));
@@ -207,79 +199,81 @@ const AdvisorMeetingLogModal = ({
               <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-800">
                 <p className="font-medium mb-1">Advisor Meeting Log</p>
-                <p>Log a meeting for one or more students. Select individual students, multiple students, or an entire project team.</p>
+                <p>Log a meeting for student(s) or an entire team.</p>
               </div>
             </div>
           </div>
 
           {/* Selection Mode Tabs */}
           {!selectedStudentId && (
-            <div className="flex border-b border-gray-200">
-              <button
-                type="button"
-                onClick={() => setSelectionMode('single')}
-                className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  selectionMode === 'single'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <User className="w-4 h-4 inline mr-1" />
-                Single Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectionMode('multiple')}
-                className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  selectionMode === 'multiple'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Users className="w-4 h-4 inline mr-1" />
-                Multiple Students
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectionMode('project')}
-                className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  selectionMode === 'project'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Users className="w-4 h-4 inline mr-1" />
-                Project Team
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Log Meeting For <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectionMode('students')}
+                  className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                    selectionMode === 'students'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Student(s)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectionMode('team')}
+                  className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                    selectionMode === 'team'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Team
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Single Student Selection */}
-          {selectionMode === 'single' && (
+          {/* Students Selection - Checkbox List */}
+          {selectionMode === 'students' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student *
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Student(s) <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <select
-                  className={`w-full p-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.studentId ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  value={formData.studentId}
-                  onChange={(e) => handleInputChange('studentId', e.target.value)}
-                  disabled={selectedStudentId}
-                >
-                  <option value="">Select a student...</option>
-                  {students.map(student => (
-                    <option key={student.id} value={student.id}>
-                      {student.name} ({student.email})
-                    </option>
-                  ))}
-                </select>
-                <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <div className={`border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto ${
+                errors.studentIds ? 'border-red-300' : ''
+              }`}>
+                {students.length === 0 ? (
+                  <p className="text-sm text-gray-500">No students available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {students.map((student) => (
+                      <label key={student.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.studentIds.includes(student.id)}
+                          onChange={(e) => handleMultiSelectChange(student.id, e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                          disabled={selectedStudentId && selectedStudentId === student.id}
+                        />
+                        <span className="text-sm text-gray-700">{student.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {formData.studentIds.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-600">
+                      {formData.studentIds.length} student{formData.studentIds.length !== 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
               </div>
-              {errors.studentId && (
-                <p className="text-sm text-red-600 mt-1">{errors.studentId}</p>
+              {errors.studentIds && (
+                <p className="text-sm text-red-600 mt-1">{errors.studentIds}</p>
               )}
               {selectedStudentId && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -289,56 +283,24 @@ const AdvisorMeetingLogModal = ({
             </div>
           )}
 
-          {/* Multiple Students Selection */}
-          {selectionMode === 'multiple' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Students * ({formData.studentIds.length} selected)
-              </label>
-              <div className={`max-h-48 overflow-y-auto border rounded-lg p-2 ${
-                errors.studentIds ? 'border-red-300' : 'border-gray-300'
-              }`}>
-                {students.map(student => (
-                  <label
-                    key={student.id}
-                    className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.studentIds.includes(student.id)}
-                      onChange={(e) => handleMultiSelectChange(student.id, e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      {student.name} <span className="text-gray-500">({student.email})</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {errors.studentIds && (
-                <p className="text-sm text-red-600 mt-1">{errors.studentIds}</p>
-              )}
-            </div>
-          )}
-
-          {/* Project Group Selection */}
-          {selectionMode === 'project' && (
+          {/* Team Selection */}
+          {selectionMode === 'team' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Project Team *
+                Select Team <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
-                  className={`w-full p-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.projectGroupId ? 'border-red-300' : 'border-gray-300'
-                  }`}
                   value={formData.projectGroupId}
                   onChange={(e) => handleInputChange('projectGroupId', e.target.value)}
+                  className={`w-full p-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.projectGroupId ? 'border-red-300' : ''
+                  }`}
                 >
-                  <option value="">Select a project team...</option>
-                  {projectGroups.map(group => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ({group.studentIds?.length || 0} students)
+                  <option value="">Select a team...</option>
+                  {projectGroups.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} ({team.studentIds?.length || 0} students)
                     </option>
                   ))}
                 </select>
@@ -349,7 +311,7 @@ const AdvisorMeetingLogModal = ({
               )}
               {projectGroups.length === 0 && (
                 <p className="text-xs text-gray-500 mt-1">
-                  No project teams available. Create one in the dashboard settings.
+                  No teams available. Create one in Project Teams.
                 </p>
               )}
             </div>

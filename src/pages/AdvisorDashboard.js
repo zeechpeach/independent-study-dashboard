@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Users, Calendar, Target, History } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
-import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
 import AdvisorImportantDatesPanel from '../components/advisor/AdvisorImportantDatesPanel';
@@ -222,26 +221,26 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </div>
       </div>
 
-      {/* Stats Overview - Three Cards with Important Dates */}
+      {/* Stats Overview - Compact Stats and Important Dates */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card">
+        {/* Compact stat cards - reduced padding and font sizes */}
+        <div className="card py-3 px-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-3xl font-bold text-gray-900">{statsData.totalStudents}</p>
+              <p className="text-xs font-medium text-gray-600">Total Students</p>
+              <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-600" />
+            <Users className="w-6 h-6 text-blue-600" />
           </div>
         </div>
         
-        <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <div className="card py-3 px-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700">Total Meeting Views</p>
-              <p className="text-3xl font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
-              <p className="text-xs text-green-600">Across all students</p>
+              <p className="text-xs font-medium text-green-700">Total Meeting Views</p>
+              <p className="text-2xl font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
             </div>
-            <Calendar className="w-8 h-8 text-green-600" />
+            <Calendar className="w-6 h-6 text-green-600" />
           </div>
         </div>
 
@@ -315,19 +314,15 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </AdvisorDashboardGrid.Main>
 
         <AdvisorDashboardGrid.Sidebar>
-          <AdvisorTodoList 
-            advisorId={user?.uid}
-            students={students}
-          />
           <NeedsAttentionPanel 
             advisorEmail={advisorEmail}
             userProfile={userProfile}
             onStudentClick={handleStudentClick}
             onViewAllClick={handleViewAllStudentIssues}
           />
-          <StrugglingItemsPanel 
-            advisorEmail={advisorEmail}
-            userProfile={userProfile}
+          <AdvisorTodoList 
+            advisorId={user?.uid}
+            students={students}
           />
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>
