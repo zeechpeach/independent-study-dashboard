@@ -411,6 +411,15 @@ export const updateMeeting = async (meetingId, data) => {
   }
 };
 
+export const deleteMeeting = async (meetingId) => {
+  try {
+    await deleteDoc(doc(db, 'meetings', meetingId));
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    throw error;
+  }
+};
+
 export const getUserMeetings = async (userId) => {
   try {
     const q = query(

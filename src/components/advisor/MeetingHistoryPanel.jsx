@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, User, Filter, ChevronDown, Edit2, Save, X } from 'lucide-react';
+import { Calendar, Clock, User, Filter, ChevronDown, Edit2, Save, X, Trash2 } from 'lucide-react';
 import { meetingsService } from '../../services/meetingsService';
 import { getStudentsByAdvisor } from '../../services/firebase';
 
@@ -130,6 +130,23 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
     } catch (error) {
       console.error('Error updating attendance:', error);
       setSaveError('Failed to update attendance. Please try again.');
+    }
+  };
+
+  const handleDeleteMeeting = async (meetingId) => {
+    if (!window.confirm('Are you sure you want to delete this meeting? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setSaveError(null);
+      await meetingsService.deleteMeeting(meetingId);
+      
+      // Refresh data
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
+      setSaveError('Failed to delete meeting. Please try again.');
     }
   };
 
@@ -325,6 +342,7 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
                 onCancelEdit={handleCancelEdit}
                 onSaveEdit={handleSaveEdit}
                 onStatusChange={setEditingStatus}
+                onDelete={handleDeleteMeeting}
               />
             ))
           )}
@@ -343,7 +361,8 @@ const MeetingHistoryCard = ({
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
-  onStatusChange
+  onStatusChange,
+  onDelete
 }) => {
   const getStatusColor = (status) => {
     switch (status) {
@@ -469,14 +488,24 @@ const MeetingHistoryCard = ({
               </button>
             </>
           ) : (
-            <button
-              onClick={() => onStartEdit(meeting)}
-              className="btn btn-xs btn-secondary flex items-center gap-1"
-              title="Edit attendance status"
-            >
-              <Edit2 className="w-3 h-3" />
-              Edit
-            </button>
+            <>
+              <button
+                onClick={() => onStartEdit(meeting)}
+                className="btn btn-xs btn-secondary flex items-center gap-1"
+                title="Edit attendance status"
+              >
+                <Edit2 className="w-3 h-3" />
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(meeting.id)}
+                className="btn btn-xs text-red-600 hover:text-red-800 hover:bg-red-50 flex items-center gap-1"
+                title="Delete meeting"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </button>
+            </>
           )}
         </div>
       </div>
