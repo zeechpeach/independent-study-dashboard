@@ -228,7 +228,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
+              <p className="text-3xl font-bold text-gray-900">{statsData.totalStudents}</p>
             </div>
             <Users className="w-8 h-8 text-blue-600" />
           </div>
