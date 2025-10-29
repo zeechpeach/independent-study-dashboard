@@ -81,26 +81,27 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
   const getFilteredMeetings = () => {
     switch (filter) {
       case 'upcoming':
-        // Only show future meetings that are actually upcoming (not logged meetings needing confirmation)
+        // Only show future meetings that are scheduled (not pending review)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return meetings
           .filter(meeting => {
             const meetingDate = new Date(meeting.scheduledDate);
             meetingDate.setHours(0, 0, 0, 0);
-            // Show only meetings that are in the future and have been confirmed (attendanceMarked = true)
-            // OR meetings that are truly upcoming (scheduled from booking systems, not manually logged)
-            return meetingDate >= today && (meeting.attendanceMarked || meeting.source !== 'manual');
+            // Show only meetings that are in the future and scheduled (not pending review)
+            return meetingDate >= today && meeting.status === 'scheduled';
           })
           .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
       case 'past':
-        // Only show meetings where attendance has been marked (confirmed by advisor)
+        // Show all meetings where attendance has been marked (confirmed by advisor)
         // Filter out meetings that were overridden
         return meetings
           .filter(meeting => meeting.attendanceMarked && !meeting.overriddenBy)
           .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
       case 'needs-attention':
-        return meetingsService.getMeetingsNeedingAttention(meetings);
+        // Show ALL meetings pending advisor review (regardless of date)
+        return meetingsService.getMeetingsNeedingAttention(meetings)
+          .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
       default:
         return meetings;
     }
@@ -248,9 +249,10 @@ const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
   const isPast = meetingDate < today;
 
   const getStatusColor = () => {
-    if (meeting.status === 'completed') return 'bg-green-50 border-green-200';
+    if (meeting.status === 'attended' || meeting.status === 'completed') return 'bg-green-50 border-green-200';
     if (meeting.status === 'cancelled') return 'bg-red-50 border-red-200';
-    if (meeting.status === 'no-show') return 'bg-orange-50 border-orange-200';
+    if (meeting.status === 'missed' || meeting.status === 'no-show') return 'bg-orange-50 border-orange-200';
+    if (meeting.status === 'pending-review') return 'bg-yellow-50 border-yellow-200';
     if (isOverdue) return 'bg-red-50 border-red-200';
     if (isToday) return 'bg-blue-50 border-blue-200';
     return 'bg-gray-50 border-gray-200';
@@ -265,15 +267,17 @@ const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
               {meeting.title || 'Meeting'}
             </h4>
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-              meeting.status === 'completed' ? 'bg-green-100 text-green-800' :
+              meeting.status === 'attended' || meeting.status === 'completed' ? 'bg-green-100 text-green-800' :
               meeting.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-              meeting.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
+              meeting.status === 'missed' || meeting.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
+              meeting.status === 'pending-review' ? 'bg-yellow-100 text-yellow-800' :
               isOverdue ? 'bg-red-100 text-red-800' :
               isToday ? 'bg-blue-100 text-blue-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {meeting.status === 'no-show' ? 'No Show' : 
-               meeting.status === 'completed' ? 'Completed' :
+              {meeting.status === 'attended' || meeting.status === 'completed' ? 'Attended' :
+               meeting.status === 'missed' || meeting.status === 'no-show' ? 'Missed' :
+               meeting.status === 'pending-review' ? 'Pending Review' :
                meeting.status === 'cancelled' ? 'Cancelled' :
                isOverdue ? 'Overdue' :
                isToday ? 'Today' : 'Scheduled'}
@@ -303,8 +307,8 @@ const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
         </div>
 
         <div className="flex flex-col gap-2 ml-4">
-          {/* Attendance buttons */}
-          {isPast && !meeting.attendanceMarked && (
+          {/* Attendance buttons - show for pending-review OR past unconfirmed meetings */}
+          {!meeting.attendanceMarked && (meeting.status === 'pending-review' || isPast) && (
             <div className="flex gap-1">
               <button
                 onClick={() => onMarkAttendance(meeting, true)}
@@ -317,9 +321,9 @@ const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
               <button
                 onClick={() => onMarkAttendance(meeting, false)}
                 className="btn btn-xs btn-error"
-                title="Mark as no-show"
+                title="Mark as missed"
               >
-                No Show
+                Missed
               </button>
             </div>
           )}
@@ -328,7 +332,13 @@ const MeetingCard = ({ meeting, studentName, onMarkAttendance }) => {
           {meeting.attendanceMarked && (
             <div className="text-xs text-green-600 flex items-center gap-1">
               <CheckCircle className="w-3 h-3" />
-              Attendance marked
+              Confirmed by advisor
+            </div>
+          )}
+          {meeting.studentSelfReported && !meeting.attendanceMarked && (
+            <div className="text-xs text-blue-600 flex items-center gap-1">
+              <User className="w-3 h-3" />
+              Logged by student
             </div>
           )}
         </div>

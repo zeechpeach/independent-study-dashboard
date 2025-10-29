@@ -62,7 +62,7 @@ const MeetingCreateModal = ({ isOpen, onClose, onSave, userProfile, editingMeeti
         scheduledDate: scheduledDateTime.toISOString(),
         duration: 30, // Default 30 minutes
         meetingLink: '',
-        status: 'scheduled',  // All logged meetings start as scheduled, not completed
+        status: 'pending-review',  // Student-logged meetings need advisor review
         source: 'manual',
         attendanceMarked: false,  // Don't auto-mark attendance - advisor needs to confirm
         studentSelfReported: true,  // Student logged this
