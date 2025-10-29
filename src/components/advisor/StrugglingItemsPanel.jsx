@@ -66,7 +66,7 @@ const StrugglingItemsPanel = ({ className = '', advisorEmail, userProfile }) => 
     return (
       <div className={`card ${className}`}>
         <div className="card-header">
-          <h2 className="card-title">Students Need Help</h2>
+          <h2 className="card-title">Students Needing Help</h2>
         </div>
         <div className="flex items-center justify-center py-8">
           <div className="loading-spinner w-6 h-6" />
@@ -80,7 +80,7 @@ const StrugglingItemsPanel = ({ className = '', advisorEmail, userProfile }) => 
     return (
       <div className={`card ${className}`}>
         <div className="card-header">
-          <h2 className="card-title">Students Need Help</h2>
+          <h2 className="card-title">Students Needing Help</h2>
         </div>
         <div className="p-6 text-center text-red-600">
           {error}
@@ -94,7 +94,7 @@ const StrugglingItemsPanel = ({ className = '', advisorEmail, userProfile }) => 
       <div className="card-header">
         <div className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-orange-600" />
-          <h2 className="card-title">Students Need Help</h2>
+          <h2 className="card-title">Students Needing Help</h2>
         </div>
         {strugglingItems.length > 0 && (
           <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">

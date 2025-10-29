@@ -3,10 +3,11 @@ import { AlertTriangle, Clock, Users } from 'lucide-react';
 import { getStudentsNeedingAttention } from '../../services/firebase';
 
 /**
- * NeedsAttentionPanel - Displays students requiring advisor attention
+ * NeedsAttentionPanel - Displays students needing help
  * 
- * Phase 3B: Now uses dynamic data from Firebase to show real students
- * who need attention based on missing reflections, overdue goals, etc.
+ * Shows students who meet ANY of these criteria:
+ * - No completed meetings in the past 14 days
+ * - Have open action items marked as "Need Help"
  */
 const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStudentClick, onViewAllClick }) => {
   const [studentsNeedingAttention, setStudentsNeedingAttention] = useState([]);
@@ -84,7 +85,7 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
         <div className="card-header">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />
-            <h2 className="card-title">Students Needing Attention</h2>
+            <h2 className="card-title">Students Needing Help</h2>
           </div>
         </div>
         <div className="flex items-center justify-center py-8">
@@ -101,7 +102,7 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
         <div className="card-header">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />
-            <h2 className="card-title">Students Needing Attention</h2>
+            <h2 className="card-title">Students Needing Help</h2>
           </div>
         </div>
         <div className="text-center py-8">
@@ -117,7 +118,7 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
       <div className="card-header">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-red-600" />
-          <h2 className="card-title">Students Needing Attention</h2>
+          <h2 className="card-title">Students Needing Help</h2>
           {studentsNeedingAttention.length > 0 && (
             <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
               {studentsNeedingAttention.length}
