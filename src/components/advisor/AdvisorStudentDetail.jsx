@@ -181,6 +181,9 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
     return date.toLocaleDateString();
   };
 
+  // Filter out overridden meetings to avoid duplication
+  const activeMeetings = meetings.filter(m => !m.overriddenBy);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -381,9 +384,9 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
           <div className="flex items-center justify-between">
             <h2 className="card-title flex items-center gap-2">
               <Calendar className="w-5 h-5 text-purple-500" />
-              Meeting History ({meetings.filter(m => !m.overriddenBy).length})
+              Meeting History ({activeMeetings.length})
             </h2>
-            {meetings.filter(m => !m.overriddenBy).length > 5 && (
+            {activeMeetings.length > 5 && (
               <button
                 onClick={() => setMeetingsExpanded(!meetingsExpanded)}
                 className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
@@ -403,9 +406,9 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
             )}
           </div>
         </div>
-        {meetings.filter(m => !m.overriddenBy).length > 0 ? (
+        {activeMeetings.length > 0 ? (
           <div className="space-y-3">
-            {(meetingsExpanded ? meetings.filter(m => !m.overriddenBy) : meetings.filter(m => !m.overriddenBy).slice(0, 5))
+            {(meetingsExpanded ? activeMeetings : activeMeetings.slice(0, 5))
               .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
               .map((meeting) => (
               <MeetingHistoryItem 
@@ -447,6 +450,14 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
   );
 };
 
+// Utility function to determine meeting source
+const getMeetingSource = (meeting) => {
+  return {
+    isStudentLogged: meeting.source === 'manual' || meeting.studentSelfReported,
+    isAdvisorLogged: meeting.source === 'advisor-manual'
+  };
+};
+
 // Individual meeting history item component
 const MeetingHistoryItem = ({ 
   meeting, 
@@ -485,13 +496,6 @@ const MeetingHistoryItem = ({
       default:
         return status;
     }
-  };
-
-  const getMeetingSource = (meeting) => {
-    return {
-      isStudentLogged: meeting.source === 'manual' || meeting.studentSelfReported,
-      isAdvisorLogged: meeting.source === 'advisor-manual'
-    };
   };
 
   const { isStudentLogged, isAdvisorLogged } = getMeetingSource(meeting);

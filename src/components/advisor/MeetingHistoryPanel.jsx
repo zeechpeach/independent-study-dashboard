@@ -57,14 +57,9 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
   }, [fetchData]);
 
   const getFilteredMeetings = () => {
-    let filtered = meetings.filter(meeting => {
-      // Don't show overridden meetings
-      if (meeting.overriddenBy) return false;
-      
-      // Show all meetings including those pending review
-      // This allows advisors to review and edit past meetings that were automatically marked
-      return true;
-    });
+    // Show all meetings except overridden ones, including those pending review
+    // This allows advisors to review and edit past meetings that were automatically marked
+    let filtered = meetings.filter(meeting => !meeting.overriddenBy);
 
     // Apply student filter
     if (filters.studentId) {
