@@ -7,7 +7,7 @@ import AdvisorMeetingLogModal from './AdvisorMeetingLogModal';
 /**
  * Component for advisors to manage meetings - mark attendance and provide feedback
  */
-const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
+const AdvisorMeetingsPanel = ({ advisorEmail, userProfile, onViewHistory }) => {
   const [meetings, setMeetings] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +199,18 @@ const AdvisorMeetingsPanel = ({ advisorEmail, userProfile }) => {
               </button>
             ))}
           </div>
+
+          {/* Link to meeting history for past meetings tab */}
+          {filter === 'past' && filteredMeetings.length > 0 && onViewHistory && (
+            <div className="mb-4">
+              <button
+                onClick={onViewHistory}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                View Full Meeting History with Filters →
+              </button>
+            </div>
+          )}
 
           {/* Meetings list */}
           <div className="space-y-3">
