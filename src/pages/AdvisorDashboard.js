@@ -10,6 +10,7 @@ import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 import AdvisorTodoList from '../components/advisor/AdvisorTodoList';
 import MeetingHistoryPanel from '../components/advisor/MeetingHistoryPanel';
+import ProjectGroupManagement from '../components/advisor/ProjectGroupManagement';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData, getStudentsByAdvisor } from '../services/firebase';
@@ -29,6 +30,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [showActiveGoals, setShowActiveGoals] = useState(false);
   const [showStudentDetail, setShowStudentDetail] = useState(false);
   const [showMeetingHistory, setShowMeetingHistory] = useState(false);
+  const [showProjectGroups, setShowProjectGroups] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [students, setStudents] = useState([]);
@@ -161,7 +163,16 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
-
+  // Show project groups management if requested
+  if (showProjectGroups) {
+    return (
+      <ProjectGroupManagement
+        advisorId={user?.uid}
+        advisorEmail={advisorEmail}
+        onBack={() => setShowProjectGroups(false)}
+      />
+    );
+  }
 
   // Show student detail if requested
   if (showStudentDetail && selectedStudent) {
@@ -187,7 +198,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     weeklyMeetings: 0,
     pendingReflections: 0,
     activeGoals: 0,
-    overdueItems: 0
+    overdueItems: 0,
+    totalCompletedMeetings: 0
   };
 
   return (
@@ -209,15 +221,28 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="card">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Total Students</p>
-            <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
-            <p className="text-xs text-gray-500">{statsData.activeStudents} active</p>
+      {/* Stats Overview - Two Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Students</p>
+              <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
+              <p className="text-xs text-gray-500">{statsData.activeStudents} active</p>
+            </div>
+            <Users className="w-8 h-8 text-blue-600" />
           </div>
-          <Users className="w-8 h-8 text-blue-600" />
+        </div>
+        
+        <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-700">Total Completed Meetings</p>
+              <p className="text-3xl font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
+              <p className="text-xs text-green-600">Across all students</p>
+            </div>
+            <Calendar className="w-8 h-8 text-green-600" />
+          </div>
         </div>
       </div>
 
@@ -262,6 +287,13 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
               >
                 <History className="w-4 h-4" />
                 Meeting History
+              </button>
+              <button 
+                onClick={() => setShowProjectGroups(true)}
+                className="btn btn-secondary"
+              >
+                <Users className="w-4 h-4" />
+                Project Teams
               </button>
             </AdvisorGridContainer>
           </div>
