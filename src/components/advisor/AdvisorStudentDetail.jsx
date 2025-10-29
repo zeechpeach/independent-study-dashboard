@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Target, CheckSquare, FileText, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { ArrowLeft, User, Mail, Target, CheckSquare, FileText, ChevronDown, ChevronUp, Plus, Calendar, Clock, Edit2, Save, X } from 'lucide-react';
 import { getUserProfile, getUserActionItems, getUserNotes, getUserMeetings } from '../../services/firebase';
 import { meetingsService } from '../../services/meetingsService';
 import AdvisorMeetingLogModal from './AdvisorMeetingLogModal';
@@ -11,12 +11,16 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
   const [student, setStudent] = useState(null);
   const [actionItems, setActionItems] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   const [meetingCounts, setMeetingCounts] = useState({ completed: 0, missed: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionItemsExpanded, setActionItemsExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
+  const [meetingsExpanded, setMeetingsExpanded] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [editingMeetingId, setEditingMeetingId] = useState(null);
+  const [editingStatus, setEditingStatus] = useState(null);
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -48,6 +52,7 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
         setStudent(studentData || { name: studentName, email: studentEmail });
         setActionItems(studentActionItems);
         setNotes(studentNotes);
+        setMeetings(studentMeetings);
         
         // Calculate meeting attendance counts
         const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
@@ -74,13 +79,47 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
         attended
       );
       
-      // Refresh student details to update meeting counts
+      // Refresh student details to update meeting counts and list
       const studentMeetings = await getUserMeetings(meetingStudentId);
       const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
       setMeetingCounts(counts);
+      setMeetings(studentMeetings);
     } catch (error) {
       console.error('Error logging meeting:', error);
       throw error;
+    }
+  };
+
+  const handleStartEdit = (meeting) => {
+    setEditingMeetingId(meeting.id);
+    setEditingStatus(meeting.status);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMeetingId(null);
+    setEditingStatus(null);
+  };
+
+  const handleSaveEdit = async (meetingId) => {
+    try {
+      // Map status to studentAttended boolean
+      const studentAttended = editingStatus === 'attended';
+      
+      await meetingsService.markAttendance(meetingId, {
+        studentAttended: studentAttended,
+        advisorAttended: true,
+        notes: `Attendance updated by ${userProfile?.name || userProfile?.email}`
+      });
+      
+      // Refresh student details to update meeting counts and list
+      const studentMeetings = await getUserMeetings(studentId);
+      const counts = meetingsService.getMeetingAttendanceCounts(studentMeetings);
+      setMeetingCounts(counts);
+      setMeetings(studentMeetings);
+      handleCancelEdit();
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      alert('Failed to update attendance. Please try again.');
     }
   };
 
@@ -336,6 +375,59 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
         )}
       </div>
 
+      {/* Meeting History */}
+      <div className="card">
+        <div className="card-header">
+          <div className="flex items-center justify-between">
+            <h2 className="card-title flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-500" />
+              Meeting History ({meetings.filter(m => !m.overriddenBy).length})
+            </h2>
+            {meetings.filter(m => !m.overriddenBy).length > 5 && (
+              <button
+                onClick={() => setMeetingsExpanded(!meetingsExpanded)}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+              >
+                {meetingsExpanded ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Show All
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+        {meetings.filter(m => !m.overriddenBy).length > 0 ? (
+          <div className="space-y-3">
+            {(meetingsExpanded ? meetings.filter(m => !m.overriddenBy) : meetings.filter(m => !m.overriddenBy).slice(0, 5))
+              .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
+              .map((meeting) => (
+              <MeetingHistoryItem 
+                key={meeting.id} 
+                meeting={meeting}
+                isEditing={editingMeetingId === meeting.id}
+                editingStatus={editingStatus}
+                onStartEdit={handleStartEdit}
+                onCancelEdit={handleCancelEdit}
+                onSaveEdit={handleSaveEdit}
+                onStatusChange={setEditingStatus}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">No meeting history yet</p>
+          </div>
+        )}
+      </div>
+
       {/* Meeting Log Modal */}
       {studentId && (
         <AdvisorMeetingLogModal
@@ -351,6 +443,148 @@ const AdvisorStudentDetail = ({ studentId, studentName, studentEmail, onBack, us
           userProfile={userProfile}
         />
       )}
+    </div>
+  );
+};
+
+// Individual meeting history item component
+const MeetingHistoryItem = ({ 
+  meeting, 
+  isEditing,
+  editingStatus,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onStatusChange
+}) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'attended':
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'missed':
+      case 'no-show':
+        return 'bg-red-100 text-red-800';
+      case 'pending-review':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'attended':
+      case 'completed':
+        return 'Attended';
+      case 'missed':
+      case 'no-show':
+        return 'Missed';
+      case 'pending-review':
+        return 'Pending Review';
+      default:
+        return status;
+    }
+  };
+
+  const getMeetingSource = (meeting) => {
+    return {
+      isStudentLogged: meeting.source === 'manual' || meeting.studentSelfReported,
+      isAdvisorLogged: meeting.source === 'advisor-manual'
+    };
+  };
+
+  const { isStudentLogged, isAdvisorLogged } = getMeetingSource(meeting);
+
+  return (
+    <div className="p-3 border rounded-lg bg-gray-50">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-purple-500" />
+            <span className="font-medium text-gray-900">
+              {meetingsService.formatMeetingDate(meeting.scheduledDate)}
+            </span>
+            
+            {/* Status badge - editable */}
+            {isEditing ? (
+              <select
+                value={editingStatus}
+                onChange={(e) => onStatusChange(e.target.value)}
+                className="text-xs px-2 py-1 rounded-full font-medium border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="attended">Attended</option>
+                <option value="missed">Missed</option>
+              </select>
+            ) : (
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(meeting.status)}`}>
+                {getStatusLabel(meeting.status)}
+              </span>
+            )}
+
+            {/* Source indicator */}
+            {isStudentLogged && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                Student Logged
+              </span>
+            )}
+            {isAdvisorLogged && (
+              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">
+                Advisor Logged
+              </span>
+            )}
+          </div>
+
+          {meeting.title && meeting.title !== 'Meeting Log' && (
+            <p className="text-sm text-gray-900 mb-1">{meeting.title}</p>
+          )}
+
+          {meeting.description && (
+            <p className="text-sm text-gray-600 mb-1">{meeting.description}</p>
+          )}
+
+          {meeting.attendanceNotes && (
+            <div className="bg-white p-2 rounded text-xs mt-1">
+              <strong>Notes:</strong> {meeting.attendanceNotes}
+            </div>
+          )}
+
+          {meeting.advisorFeedback && (
+            <div className="bg-blue-50 p-2 rounded text-xs mt-1">
+              <strong>Feedback:</strong> {meeting.advisorFeedback}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1 ml-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => onSaveEdit(meeting.id)}
+                className="p-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                title="Save"
+              >
+                <Save className="w-3 h-3" />
+              </button>
+              <button
+                onClick={onCancelEdit}
+                className="p-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                title="Cancel"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => onStartEdit(meeting)}
+              className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              title="Edit attendance status"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
