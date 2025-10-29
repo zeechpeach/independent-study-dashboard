@@ -19,7 +19,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
     studentIds: [],
     teamId: '',
     dueDate: '',
-    selectionMode: 'single',
+    selectionMode: 'students',
     completed: false
   });
 
@@ -97,7 +97,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
         studentIds: [], 
         teamId: '', 
         dueDate: '',
-        selectionMode: 'single',
+        selectionMode: 'students',
         completed: false 
       });
       setShowAddForm(false);
@@ -143,7 +143,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
   const handleEditTodo = (todo) => {
     setEditingTodo({
       ...todo,
-      selectionMode: todo.teamId ? 'team' : (todo.studentIds?.length > 1 ? 'multiple' : 'single'),
+      selectionMode: todo.teamId ? 'team' : 'students',
       studentIds: todo.studentIds || (todo.studentId ? [todo.studentId] : []),
       teamId: todo.teamId || '',
       dueDate: todo.dueDate || ''
@@ -266,25 +266,15 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
-                onClick={() => setNewTodo({ ...newTodo, selectionMode: 'single', studentIds: [], teamId: '' })}
+                onClick={() => setNewTodo({ ...newTodo, selectionMode: 'students', studentIds: [], teamId: '' })}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                  newTodo.selectionMode === 'single'
+                  // Check for 'students' mode and legacy 'single'/'multiple' modes for backward compatibility
+                  newTodo.selectionMode === 'students' || newTodo.selectionMode === 'single' || newTodo.selectionMode === 'multiple'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Single Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewTodo({ ...newTodo, selectionMode: 'multiple', studentIds: [], teamId: '' })}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                  newTodo.selectionMode === 'multiple'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Multiple Students
+                Student(s)
               </button>
               <button
                 type="button"
@@ -299,27 +289,9 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
               </button>
             </div>
 
-            {/* Single Student Mode */}
-            {newTodo.selectionMode === 'single' && (
-              <div className="relative">
-                <select
-                  value={newTodo.studentIds[0] || ''}
-                  onChange={(e) => setNewTodo({ ...newTodo, studentIds: e.target.value ? [e.target.value] : [] })}
-                  className="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select a student...</option>
-                  {students.map(student => (
-                    <option key={student.id} value={student.id}>
-                      {student.name}
-                    </option>
-                  ))}
-                </select>
-                <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-              </div>
-            )}
-
-            {/* Multiple Students Mode */}
-            {newTodo.selectionMode === 'multiple' && (
+            {/* Students Mode - handles both single and multiple selection with checkboxes */}
+            {/* Also supports legacy 'single' and 'multiple' modes for backward compatibility */}
+            {(newTodo.selectionMode === 'students' || newTodo.selectionMode === 'single' || newTodo.selectionMode === 'multiple') && (
               <div className="border border-gray-300 rounded-lg p-3 max-h-32 overflow-y-auto">
                 {students.length === 0 ? (
                   <p className="text-sm text-gray-500">No students available</p>
@@ -607,25 +579,15 @@ const TodoEditForm = ({ todo, students, teams, onSave, onCancel, onUpdate, onStu
         <div className="flex gap-2 mb-3">
           <button
             type="button"
-            onClick={() => onUpdate({ ...todo, selectionMode: 'single', studentIds: [], teamId: '' })}
+            onClick={() => onUpdate({ ...todo, selectionMode: 'students', studentIds: [], teamId: '' })}
             className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
-              todo.selectionMode === 'single'
+              // Support both new 'students' mode and legacy 'single'/'multiple' modes
+              todo.selectionMode === 'students' || todo.selectionMode === 'single' || todo.selectionMode === 'multiple'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
-            Single
-          </button>
-          <button
-            type="button"
-            onClick={() => onUpdate({ ...todo, selectionMode: 'multiple', studentIds: [], teamId: '' })}
-            className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
-              todo.selectionMode === 'multiple'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            Multiple
+            Student(s)
           </button>
           <button
             type="button"
@@ -640,23 +602,9 @@ const TodoEditForm = ({ todo, students, teams, onSave, onCancel, onUpdate, onStu
           </button>
         </div>
 
-        {/* Selection UI */}
-        {todo.selectionMode === 'single' && (
-          <select
-            value={todo.studentIds[0] || ''}
-            onChange={(e) => onUpdate({ ...todo, studentIds: e.target.value ? [e.target.value] : [] })}
-            className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select a student...</option>
-            {students.map(student => (
-              <option key={student.id} value={student.id}>
-                {student.name}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {todo.selectionMode === 'multiple' && (
+        {/* Selection UI - Students mode handles both single and multiple selection */}
+        {/* Legacy modes 'single' and 'multiple' supported for existing todos */}
+        {(todo.selectionMode === 'students' || todo.selectionMode === 'single' || todo.selectionMode === 'multiple') && (
           <div className="border border-gray-300 rounded-lg p-2 max-h-24 overflow-y-auto bg-white">
             <div className="space-y-1">
               {students.map((student) => (

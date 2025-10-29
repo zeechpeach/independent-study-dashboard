@@ -1,6 +1,7 @@
 import { 
   createMeeting, 
   updateMeeting, 
+  deleteMeeting,
   getUserMeetings,
   getAllMeetings,
   createAdvisorMeetingLog
@@ -27,6 +28,16 @@ export const meetingsService = {
       return await updateMeeting(meetingId, data);
     } catch (error) {
       console.error('Error updating meeting:', error);
+      throw error;
+    }
+  },
+
+  // Delete a meeting
+  async deleteMeeting(meetingId) {
+    try {
+      return await deleteMeeting(meetingId);
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
       throw error;
     }
   },

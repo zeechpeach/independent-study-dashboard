@@ -227,9 +227,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Students</p>
-              <p className="text-2xl font-bold text-gray-900">{statsData.activeStudents}</p>
-              <p className="text-xs text-gray-500">of {statsData.totalStudents} total</p>
+              <p className="text-sm font-medium text-gray-600">Total Students</p>
+              <p className="text-3xl font-bold text-gray-900">{statsData.totalStudents}</p>
             </div>
             <Users className="w-8 h-8 text-blue-600" />
           </div>
@@ -281,13 +280,6 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
               >
                 <Target className="w-4 h-4" />
                 Review Active Goals
-              </button>
-              <button 
-                onClick={() => setShowImportantDates(true)}
-                className="btn btn-secondary"
-              >
-                <Calendar className="w-4 h-4" />
-                Important Dates
               </button>
               <button 
                 onClick={() => setShowMeetingHistory(true)}
