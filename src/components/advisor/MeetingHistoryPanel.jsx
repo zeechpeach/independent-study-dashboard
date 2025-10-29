@@ -57,15 +57,9 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
   }, [fetchData]);
 
   const getFilteredMeetings = () => {
-    let filtered = meetings.filter(meeting => {
-      // Only show meetings where attendance has been marked
-      if (!meeting.attendanceMarked) return false;
-      
-      // Don't show overridden meetings
-      if (meeting.overriddenBy) return false;
-      
-      return true;
-    });
+    // Show all meetings except overridden ones, including those pending review
+    // This allows advisors to review and edit past meetings that were automatically marked
+    let filtered = meetings.filter(meeting => !meeting.overriddenBy);
 
     // Apply student filter
     if (filters.studentId) {
@@ -242,6 +236,7 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                   >
                     <option value="">All Statuses</option>
+                    <option value="pending-review">Pending Review</option>
                     <option value="attended">Attended</option>
                     <option value="missed">Missed</option>
                     <option value="completed">Completed (Legacy)</option>
@@ -358,6 +353,8 @@ const MeetingHistoryCard = ({
       case 'missed':
       case 'no-show':
         return 'bg-red-100 text-red-800';
+      case 'pending-review':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -371,6 +368,8 @@ const MeetingHistoryCard = ({
       case 'missed':
       case 'no-show':
         return 'Missed';
+      case 'pending-review':
+        return 'Pending Review';
       default:
         return status;
     }
