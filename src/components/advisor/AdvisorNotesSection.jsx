@@ -490,7 +490,7 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-96 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
         {filteredNotes.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />

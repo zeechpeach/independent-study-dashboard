@@ -34,10 +34,11 @@ DashboardGrid.Main = ({ children, className = '' }) => {
  * 
  * Takes up 1/3 of the grid on large screens, full width on mobile.
  * Replaces legacy .dashboard-sidebar class.
+ * Uses self-start to align at top while maintaining consistent bottom edges.
  */
 DashboardGrid.Sidebar = ({ children, className = '' }) => {
   return (
-    <div className={`lg:col-span-1 space-y-4 sm:space-y-6 min-w-0 lg:min-w-80 ${className}`}>
+    <div className={`lg:col-span-1 space-y-4 sm:space-y-6 min-w-0 lg:min-w-80 lg:self-start ${className}`}>
       {children}
     </div>
   );
