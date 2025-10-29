@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Target } from 'lucide-react';
+import { Users, Calendar, Target, History } from 'lucide-react';
 import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
@@ -9,6 +9,7 @@ import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
 import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 import AdvisorTodoList from '../components/advisor/AdvisorTodoList';
+import MeetingHistoryPanel from '../components/advisor/MeetingHistoryPanel';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData, getStudentsByAdvisor } from '../services/firebase';
@@ -27,6 +28,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [showImportantDates, setShowImportantDates] = useState(false);
   const [showActiveGoals, setShowActiveGoals] = useState(false);
   const [showStudentDetail, setShowStudentDetail] = useState(false);
+  const [showMeetingHistory, setShowMeetingHistory] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [students, setStudents] = useState([]);
@@ -148,6 +150,17 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
+  // Show meeting history if requested
+  if (showMeetingHistory) {
+    return (
+      <MeetingHistoryPanel
+        advisorEmail={advisorEmail}
+        userProfile={userProfile}
+        onBack={() => setShowMeetingHistory(false)}
+      />
+    );
+  }
+
 
 
   // Show student detail if requested
@@ -243,6 +256,13 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
                 <Calendar className="w-4 h-4" />
                 Important Dates
               </button>
+              <button 
+                onClick={() => setShowMeetingHistory(true)}
+                className="btn btn-secondary"
+              >
+                <History className="w-4 h-4" />
+                Meeting History
+              </button>
             </AdvisorGridContainer>
           </div>
 
@@ -252,6 +272,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           <AdvisorMeetingsPanel
             advisorEmail={advisorEmail}
             userProfile={userProfile}
+            onViewHistory={() => setShowMeetingHistory(true)}
           />
 
           {/* Advisor Notes */}

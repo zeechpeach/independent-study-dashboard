@@ -118,6 +118,7 @@ export const meetingsService = {
   },
 
   // Mark attendance for a meeting (advisor function)
+  // Changes status from 'pending-review' to 'attended' or 'missed'
   async markAttendance(meetingId, attendanceData) {
     try {
       return await updateMeeting(meetingId, {
@@ -126,7 +127,8 @@ export const meetingsService = {
         advisorAttended: attendanceData.advisorAttended || true,
         attendanceNotes: attendanceData.notes || '',
         attendanceMarkedAt: new Date().toISOString(),
-        status: attendanceData.studentAttended ? 'completed' : 'no-show'
+        // Use 'attended' instead of 'completed' and 'missed' instead of 'no-show' for clarity
+        status: attendanceData.studentAttended ? 'attended' : 'missed'
       });
     } catch (error) {
       console.error('Error marking attendance:', error);
@@ -165,6 +167,7 @@ export const meetingsService = {
 
   // Get meetings that need attention (for advisors)
   // All logged meetings appear here until advisor manually confirms attendance
+  // This includes ALL meetings logged by students (past, present, or future) that haven't been reviewed
   getMeetingsNeedingAttention(meetings) {
     return meetings.filter(meeting => {
       // Skip cancelled meetings
@@ -173,25 +176,26 @@ export const meetingsService = {
       // Skip meetings where attendance has already been confirmed by advisor
       if (meeting.attendanceMarked) return false;
       
-      // All scheduled meetings (logged by students) that haven't been confirmed by advisor
-      return meeting.status === 'scheduled' && !meeting.attendanceMarked;
+      // Show all pending-review meetings (new status for student-logged meetings)
+      if (meeting.status === 'pending-review') return true;
+      
+      // For backward compatibility, also show scheduled meetings logged by students
+      // that haven't been confirmed by advisor (legacy behavior)
+      if (meeting.status === 'scheduled' && meeting.studentSelfReported && !meeting.attendanceMarked) {
+        return true;
+      }
+      
+      return false;
     });
   },
 
   // Auto-mark meetings as missed when they pass their scheduled time
+  // DEPRECATED: This function is no longer used to prevent auto-marking student-logged meetings as missed
+  // Meetings should only be marked as attended/missed by advisors after review
   markOverdueMeetingsAsMissed(meetings) {
-    const now = new Date();
-    return meetings.map(meeting => {
-      // If meeting is past its scheduled time and still in 'scheduled' status
-      if (meeting.status === 'scheduled' && new Date(meeting.scheduledDate) < now) {
-        return {
-          ...meeting,
-          status: 'missed',
-          autoMarkedAt: new Date().toISOString()
-        };
-      }
-      return meeting;
-    });
+    // Return meetings unchanged - no automatic status changes
+    // Advisors must manually review and confirm attendance for all meetings
+    return meetings;
   },
 
   // Mark student attendance for a meeting (student self-reporting)
@@ -217,20 +221,25 @@ export const meetingsService = {
       completed: 0,
       missed: 0,
       scheduled: 0,
-      cancelled: 0
+      cancelled: 0,
+      pendingReview: 0
     };
 
     meetings.forEach(meeting => {
       switch (meeting.status) {
-        case 'completed':
+        case 'attended':
+        case 'completed': // backward compatibility
           counts.completed++;
           break;
         case 'missed':
-        case 'no-show':
+        case 'no-show': // backward compatibility
           counts.missed++;
           break;
         case 'scheduled':
           counts.scheduled++;
+          break;
+        case 'pending-review':
+          counts.pendingReview++;
           break;
         case 'cancelled':
           counts.cancelled++;
@@ -251,7 +260,7 @@ export const meetingsService = {
       const scheduledDateTime = new Date(`${meetingDate}T00:00:00`);
       
       // Determine status based on attendance
-      const status = attended ? 'completed' : 'no-show';
+      const status = attended ? 'attended' : 'missed';
       
       const meetingData = {
         title: 'Meeting Log',

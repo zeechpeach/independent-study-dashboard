@@ -19,25 +19,10 @@ export const useMeetings = (userId) => {
       setError(null);
       const userMeetings = await meetingsService.getUserMeetings(userId);
       
-      // Auto-mark overdue meetings as missed
-      const updatedMeetings = meetingsService.markOverdueMeetingsAsMissed(userMeetings);
-      
-      // Update any meetings that changed status
-      for (const meeting of updatedMeetings) {
-        if (meeting.status === 'missed' && !meeting.autoMarkedAt) continue; // Skip if not newly marked
-        if (meeting.status === 'missed' && meeting.autoMarkedAt && 
-            !userMeetings.find(m => m.id === meeting.id && m.status === 'missed')) {
-          // This meeting was just marked as missed, update in database
-          await meetingsService.updateMeeting(meeting.id, {
-            status: 'missed',
-            autoMarkedAt: meeting.autoMarkedAt
-          });
-        }
-      }
-      
+      // No automatic status changes - advisors must review all meetings
       // Filter out meetings that have been overridden by advisor
       // But keep them in the raw list for audit purposes
-      const effectiveMeetings = updatedMeetings.filter(meeting => !meeting.overriddenBy);
+      const effectiveMeetings = userMeetings.filter(meeting => !meeting.overriddenBy);
       
       setMeetings(effectiveMeetings);
     } catch (err) {
