@@ -37,9 +37,10 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
 
       // Get all meetings and filter for our students
       const allMeetings = await meetingsService.getAllMeetings();
-      const studentIds = studentsData.map(s => s.id);
+      // Use Set for O(1) lookup performance
+      const studentIds = new Set(studentsData.map(s => s.id));
       const advisorMeetings = allMeetings.filter(meeting => 
-        studentIds.includes(meeting.studentId)
+        studentIds.has(meeting.studentId)
       );
 
       setMeetings(advisorMeetings);
@@ -115,8 +116,11 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
     setEditingStatus(null);
   };
 
+  const [saveError, setSaveError] = useState(null);
+
   const handleSaveEdit = async (meetingId) => {
     try {
+      setSaveError(null);
       // Map status to studentAttended boolean
       const studentAttended = editingStatus === 'attended';
       
@@ -131,7 +135,7 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
       handleCancelEdit();
     } catch (error) {
       console.error('Error updating attendance:', error);
-      alert('Failed to update attendance. Please try again.');
+      setSaveError('Failed to update attendance. Please try again.');
     }
   };
 
@@ -289,6 +293,19 @@ const MeetingHistoryPanel = ({ advisorEmail, userProfile, onBack }) => {
           </div>
         )}
 
+        {/* Save error state */}
+        {saveError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <p className="text-red-600">{saveError}</p>
+            <button 
+              onClick={() => setSaveError(null)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Meetings list */}
         <div className="space-y-3">
           {filteredMeetings.length === 0 ? (
@@ -359,8 +376,14 @@ const MeetingHistoryCard = ({
     }
   };
 
-  const isStudentLogged = meeting.source === 'manual' || meeting.studentSelfReported;
-  const isAdvisorLogged = meeting.source === 'advisor-manual';
+  const getMeetingSource = (meeting) => {
+    return {
+      isStudentLogged: meeting.source === 'manual' || meeting.studentSelfReported,
+      isAdvisorLogged: meeting.source === 'advisor-manual'
+    };
+  };
+
+  const { isStudentLogged, isAdvisorLogged } = getMeetingSource(meeting);
 
   return (
     <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
