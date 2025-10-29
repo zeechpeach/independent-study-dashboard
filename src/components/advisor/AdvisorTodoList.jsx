@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Circle, Plus, Trash2, User, AlertCircle, Edit2, Save, X, Users, Calendar } from 'lucide-react';
 import { createAdvisorTodo, updateAdvisorTodo, deleteAdvisorTodo, getAdvisorTodos, getProjectGroupsByAdvisor } from '../../services/firebase';
+import { processSelectionMode, getStudentNameById } from '../../utils/selectionUtils';
 
 /**
  * AdvisorTodoList - Component for advisors to manage action items for students/teams
@@ -62,34 +63,13 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
       return;
     }
 
-    let studentIds = [];
-    let studentNames = [];
-    let teamId = null;
-    let teamName = null;
-
-    if (newTodo.selectionMode === 'team' && newTodo.teamId) {
-      const team = teams.find(t => t.id === newTodo.teamId);
-      if (team) {
-        teamId = team.id;
-        teamName = team.name;
-        studentIds = team.studentIds || [];
-        studentNames = team.studentIds.map(sid => {
-          const student = students.find(s => s.id === sid);
-          return student ? student.name : 'Unknown';
-        });
-      }
-    } else if (newTodo.selectionMode === 'multiple' && newTodo.studentIds.length > 0) {
-      studentIds = newTodo.studentIds;
-      studentNames = newTodo.studentIds.map(sid => {
-        const student = students.find(s => s.id === sid);
-        return student ? student.name : 'Unknown';
-      });
-    } else if (newTodo.selectionMode === 'single' && newTodo.studentIds.length > 0) {
-      const studentId = newTodo.studentIds[0];
-      const student = students.find(s => s.id === studentId);
-      studentIds = [studentId];
-      studentNames = student ? [student.name] : [];
-    }
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      newTodo.selectionMode,
+      newTodo.studentIds,
+      newTodo.teamId,
+      students,
+      teams
+    );
 
     if (studentIds.length === 0) {
       setError('Please select at least one student or team');
@@ -175,34 +155,13 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
       return;
     }
 
-    let studentIds = [];
-    let studentNames = [];
-    let teamId = null;
-    let teamName = null;
-
-    if (editingTodo.selectionMode === 'team' && editingTodo.teamId) {
-      const team = teams.find(t => t.id === editingTodo.teamId);
-      if (team) {
-        teamId = team.id;
-        teamName = team.name;
-        studentIds = team.studentIds || [];
-        studentNames = team.studentIds.map(sid => {
-          const student = students.find(s => s.id === sid);
-          return student ? student.name : 'Unknown';
-        });
-      }
-    } else if (editingTodo.selectionMode === 'multiple' && editingTodo.studentIds.length > 0) {
-      studentIds = editingTodo.studentIds;
-      studentNames = editingTodo.studentIds.map(sid => {
-        const student = students.find(s => s.id === sid);
-        return student ? student.name : 'Unknown';
-      });
-    } else if (editingTodo.selectionMode === 'single' && editingTodo.studentIds.length > 0) {
-      const studentId = editingTodo.studentIds[0];
-      const student = students.find(s => s.id === studentId);
-      studentIds = [studentId];
-      studentNames = student ? [student.name] : [];
-    }
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      editingTodo.selectionMode,
+      editingTodo.studentIds,
+      editingTodo.teamId,
+      students,
+      teams
+    );
 
     if (studentIds.length === 0) {
       setError('Please select at least one student or team');
@@ -545,11 +504,6 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
 };
 
 const TodoItem = ({ todo, students, onToggleComplete, onDelete, onEdit }) => {
-  const getStudentName = (studentId) => {
-    const student = students.find(s => s.id === studentId);
-    return student?.name || 'Unknown';
-  };
-
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
     const date = new Date(dateStr);
@@ -588,7 +542,7 @@ const TodoItem = ({ todo, students, onToggleComplete, onDelete, onEdit }) => {
               </span>
               {todo.studentNames.slice(0, 2).map((name, idx) => (
                 <span key={idx} className="text-xs text-gray-500">
-                  {name}{idx < Math.min(todo.studentNames.length, 2) - 1 ? ',' : ''}
+                  {name}{idx < 1 ? ',' : ''}
                 </span>
               ))}
               {todo.studentNames.length > 2 && (
@@ -600,7 +554,7 @@ const TodoItem = ({ todo, students, onToggleComplete, onDelete, onEdit }) => {
           ) : (
             <span className="text-xs text-gray-600 flex items-center gap-1">
               <User className="w-3 h-3" />
-              {getStudentName(todo.studentId)}
+              {getStudentNameById(todo.studentId, students)}
             </span>
           )}
           {todo.dueDate && (

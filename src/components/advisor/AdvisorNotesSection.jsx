@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Save, Trash2, Edit2, Plus, X, Search, Filter, Users } from 'lucide-react';
 import { getAdvisorNotes, createAdvisorNote, updateAdvisorNote, deleteAdvisorNote, getProjectGroupsByAdvisor } from '../../services/firebase';
+import { processSelectionMode } from '../../utils/selectionUtils';
 
 /**
  * AdvisorNotesSection - A note-taking component for advisors with student/team tagging
@@ -68,34 +69,13 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
       return;
     }
 
-    let studentIds = [];
-    let studentNames = [];
-    let teamId = null;
-    let teamName = null;
-
-    if (selectionMode === 'team' && selectedTeamId) {
-      const team = teams.find(t => t.id === selectedTeamId);
-      if (team) {
-        teamId = team.id;
-        teamName = team.name;
-        studentIds = team.studentIds || [];
-        studentNames = team.studentIds.map(sid => {
-          const student = students.find(s => s.id === sid);
-          return student ? student.name : 'Unknown';
-        });
-      }
-    } else if (selectionMode === 'multiple' && selectedStudentIds.length > 0) {
-      studentIds = selectedStudentIds;
-      studentNames = selectedStudentIds.map(sid => {
-        const student = students.find(s => s.id === sid);
-        return student ? student.name : 'Unknown';
-      });
-    } else if (selectionMode === 'single' && selectedStudentIds.length > 0) {
-      const studentId = selectedStudentIds[0];
-      const student = students.find(s => s.id === studentId);
-      studentIds = [studentId];
-      studentNames = student ? [student.name] : [];
-    }
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      selectionMode,
+      selectedStudentIds,
+      selectedTeamId,
+      students,
+      teams
+    );
 
     if (studentIds.length === 0) {
       alert('Please select at least one student or team to tag this note to.');
@@ -154,34 +134,13 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   const handleSaveEdit = async () => {
     if (!selectedNote) return;
 
-    let studentIds = [];
-    let studentNames = [];
-    let teamId = null;
-    let teamName = null;
-
-    if (selectionMode === 'team' && selectedTeamId) {
-      const team = teams.find(t => t.id === selectedTeamId);
-      if (team) {
-        teamId = team.id;
-        teamName = team.name;
-        studentIds = team.studentIds || [];
-        studentNames = team.studentIds.map(sid => {
-          const student = students.find(s => s.id === sid);
-          return student ? student.name : 'Unknown';
-        });
-      }
-    } else if (selectionMode === 'multiple' && selectedStudentIds.length > 0) {
-      studentIds = selectedStudentIds;
-      studentNames = selectedStudentIds.map(sid => {
-        const student = students.find(s => s.id === sid);
-        return student ? student.name : 'Unknown';
-      });
-    } else if (selectionMode === 'single' && selectedStudentIds.length > 0) {
-      const studentId = selectedStudentIds[0];
-      const student = students.find(s => s.id === studentId);
-      studentIds = [studentId];
-      studentNames = student ? [student.name] : [];
-    }
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      selectionMode,
+      selectedStudentIds,
+      selectedTeamId,
+      students,
+      teams
+    );
 
     if (studentIds.length === 0) {
       alert('Please select at least one student or team to tag this note to.');
