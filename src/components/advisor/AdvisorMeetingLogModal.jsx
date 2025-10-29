@@ -257,7 +257,7 @@ const AdvisorMeetingLogModal = ({
                           checked={formData.studentIds.includes(student.id)}
                           onChange={(e) => handleMultiSelectChange(student.id, e.target.checked)}
                           className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          disabled={selectedStudentId && selectedStudentId === student.id}
+                          disabled={selectedStudentId === student.id}
                         />
                         <span className="text-sm text-gray-700">{student.name}</span>
                       </label>
