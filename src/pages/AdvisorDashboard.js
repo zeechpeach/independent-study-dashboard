@@ -10,6 +10,7 @@ import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
 import AdvisorTodoList from '../components/advisor/AdvisorTodoList';
 import MeetingHistoryPanel from '../components/advisor/MeetingHistoryPanel';
+import ProjectGroupManagement from '../components/advisor/ProjectGroupManagement';
 
 import { isAdvisorLayoutV2Enabled, isAdvisorStudentListPreviewEnabled } from '../config/featureFlags.ts';
 import { getAdvisorDashboardData, getStudentsByAdvisor } from '../services/firebase';
@@ -29,6 +30,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
   const [showActiveGoals, setShowActiveGoals] = useState(false);
   const [showStudentDetail, setShowStudentDetail] = useState(false);
   const [showMeetingHistory, setShowMeetingHistory] = useState(false);
+  const [showProjectGroups, setShowProjectGroups] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [students, setStudents] = useState([]);
@@ -161,7 +163,16 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
     );
   }
 
-
+  // Show project groups management if requested
+  if (showProjectGroups) {
+    return (
+      <ProjectGroupManagement
+        advisorId={user?.uid}
+        advisorEmail={advisorEmail}
+        onBack={() => setShowProjectGroups(false)}
+      />
+    );
+  }
 
   // Show student detail if requested
   if (showStudentDetail && selectedStudent) {
@@ -276,6 +287,13 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
               >
                 <History className="w-4 h-4" />
                 Meeting History
+              </button>
+              <button 
+                onClick={() => setShowProjectGroups(true)}
+                className="btn btn-secondary"
+              >
+                <Users className="w-4 h-4" />
+                Project Teams
               </button>
             </AdvisorGridContainer>
           </div>
