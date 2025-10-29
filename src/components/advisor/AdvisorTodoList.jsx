@@ -397,7 +397,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
         </form>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
         {/* Incomplete todos */}
         {incompleteTodos.map((todo) => (
           editingTodo && editingTodo.id === todo.id ? (
