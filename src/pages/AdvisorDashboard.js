@@ -5,6 +5,7 @@ import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import StrugglingItemsPanel from '../components/advisor/StrugglingItemsPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
+import AdvisorImportantDatesPanel from '../components/advisor/AdvisorImportantDatesPanel';
 import AdvisorMeetingsPanel from '../components/advisor/AdvisorMeetingsPanel';
 import AdvisorActiveGoals from '../components/advisor/AdvisorActiveGoals';
 import AdvisorStudentDetail from '../components/advisor/AdvisorStudentDetail';
@@ -221,14 +222,14 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </div>
       </div>
 
-      {/* Stats Overview - Two Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Stats Overview - Three Cards with Important Dates */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
-              <p className="text-xs text-gray-500">{statsData.activeStudents} active</p>
+              <p className="text-sm font-medium text-gray-600">Active Students</p>
+              <p className="text-2xl font-bold text-gray-900">{statsData.activeStudents}</p>
+              <p className="text-xs text-gray-500">of {statsData.totalStudents} total</p>
             </div>
             <Users className="w-8 h-8 text-blue-600" />
           </div>
@@ -237,12 +238,19 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700">Total Completed Meetings</p>
+              <p className="text-sm font-medium text-green-700">Total Meeting Views</p>
               <p className="text-3xl font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
               <p className="text-xs text-green-600">Across all students</p>
             </div>
             <Calendar className="w-8 h-8 text-green-600" />
           </div>
+        </div>
+
+        <div className="md:row-span-1">
+          <AdvisorImportantDatesPanel
+            userProfile={userProfile}
+            onManageClick={() => setShowImportantDates(true)}
+          />
         </div>
       </div>
 

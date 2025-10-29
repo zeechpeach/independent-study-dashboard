@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Save, Trash2, Edit2, Plus, X, Search, Filter } from 'lucide-react';
-import { getAdvisorNotes, createAdvisorNote, updateAdvisorNote, deleteAdvisorNote } from '../../services/firebase';
+import { FileText, Save, Trash2, Edit2, Plus, X, Search, Filter, Users } from 'lucide-react';
+import { getAdvisorNotes, createAdvisorNote, updateAdvisorNote, deleteAdvisorNote, getProjectGroupsByAdvisor } from '../../services/firebase';
+import { processSelectionMode } from '../../utils/selectionUtils';
 
 /**
- * AdvisorNotesSection - A note-taking component for advisors with student tagging
- * Advisors can create, edit, delete, and view notes tagged to specific students
+ * AdvisorNotesSection - A note-taking component for advisors with student/team tagging
+ * Advisors can create, edit, delete, and view notes tagged to specific students or teams
  */
 const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   const [notes, setNotes] = useState([]);
@@ -13,8 +14,10 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedStudentName, setSelectedStudentName] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [selectionMode, setSelectionMode] = useState('single'); // 'single', 'multiple', 'team'
+  const [teams, setTeams] = useState([]);
   const [filterStudentId, setFilterStudentId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -37,12 +40,26 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
     fetchNotes();
   }, [fetchNotes]);
 
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!advisorId) return;
+      try {
+        const projectTeams = await getProjectGroupsByAdvisor(advisorId);
+        setTeams(projectTeams);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+      }
+    };
+    fetchTeams();
+  }, [advisorId]);
+
   const handleCreateNote = () => {
     setIsCreating(true);
     setEditedTitle('');
     setEditedContent('');
-    setSelectedStudentId('');
-    setSelectedStudentName('');
+    setSelectedStudentIds([]);
+    setSelectedTeamId('');
+    setSelectionMode('single');
     setSelectedNote(null);
   };
 
@@ -52,16 +69,28 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
       return;
     }
 
-    if (!selectedStudentId) {
-      alert('Please select a student to tag this note to.');
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      selectionMode,
+      selectedStudentIds,
+      selectedTeamId,
+      students,
+      teams
+    );
+
+    if (studentIds.length === 0) {
+      alert('Please select at least one student or team to tag this note to.');
       return;
     }
 
     setSaving(true);
     try {
       await createAdvisorNote(advisorId, {
-        studentId: selectedStudentId,
-        studentName: selectedStudentName,
+        studentId: studentIds[0], // For backward compatibility
+        studentName: studentNames[0] || '',
+        studentIds,
+        studentNames,
+        teamId,
+        teamName,
         title: editedTitle.trim() || 'Untitled Note',
         content: editedContent
       });
@@ -69,8 +98,8 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
       setIsCreating(false);
       setEditedTitle('');
       setEditedContent('');
-      setSelectedStudentId('');
-      setSelectedStudentName('');
+      setSelectedStudentIds([]);
+      setSelectedTeamId('');
     } catch (error) {
       console.error('Error creating note:', error);
       alert('Failed to create note. Please try again.');
@@ -83,24 +112,50 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
     setSelectedNote(note);
     setEditedTitle(note.title);
     setEditedContent(note.content);
-    setSelectedStudentId(note.studentId);
-    setSelectedStudentName(note.studentName);
+    
+    // Determine selection mode based on note data
+    if (note.teamId) {
+      setSelectionMode('team');
+      setSelectedTeamId(note.teamId);
+      setSelectedStudentIds([]);
+    } else if (note.studentIds && note.studentIds.length > 1) {
+      setSelectionMode('multiple');
+      setSelectedStudentIds(note.studentIds);
+      setSelectedTeamId('');
+    } else {
+      setSelectionMode('single');
+      setSelectedStudentIds(note.studentIds || (note.studentId ? [note.studentId] : []));
+      setSelectedTeamId('');
+    }
+    
     setIsEditing(true);
   };
 
   const handleSaveEdit = async () => {
     if (!selectedNote) return;
 
-    if (!selectedStudentId) {
-      alert('Please select a student to tag this note to.');
+    const { studentIds, studentNames, teamId, teamName } = processSelectionMode(
+      selectionMode,
+      selectedStudentIds,
+      selectedTeamId,
+      students,
+      teams
+    );
+
+    if (studentIds.length === 0) {
+      alert('Please select at least one student or team to tag this note to.');
       return;
     }
 
     setSaving(true);
     try {
       await updateAdvisorNote(selectedNote.id, {
-        studentId: selectedStudentId,
-        studentName: selectedStudentName,
+        studentId: studentIds[0], // For backward compatibility
+        studentName: studentNames[0] || '',
+        studentIds,
+        studentNames,
+        teamId,
+        teamName,
         title: editedTitle.trim() || 'Untitled Note',
         content: editedContent
       });
@@ -109,8 +164,8 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
       setSelectedNote(null);
       setEditedTitle('');
       setEditedContent('');
-      setSelectedStudentId('');
-      setSelectedStudentName('');
+      setSelectedStudentIds([]);
+      setSelectedTeamId('');
     } catch (error) {
       console.error('Error updating note:', error);
       alert('Failed to update note. Please try again.');
@@ -141,16 +196,19 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
     setSelectedNote(null);
     setEditedTitle('');
     setEditedContent('');
-    setSelectedStudentId('');
-    setSelectedStudentName('');
+    setSelectedStudentIds([]);
+    setSelectedTeamId('');
+    setSelectionMode('single');
   };
 
-  const handleStudentSelection = (e) => {
-    const studentId = e.target.value;
-    setSelectedStudentId(studentId);
-    
-    const student = students.find(s => s.id === studentId);
-    setSelectedStudentName(student ? student.name : '');
+  const handleStudentToggle = (studentId) => {
+    setSelectedStudentIds(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
   };
 
   const formatTimeAgo = (timestamp) => {
@@ -219,23 +277,120 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
         </div>
 
         <div className="space-y-3">
+          {/* Selection Mode Tabs */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Student <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tag Students/Team <span className="text-red-500">*</span>
             </label>
-            <select
-              value={selectedStudentId}
-              onChange={handleStudentSelection}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              required
-            >
-              <option value="">Select a student...</option>
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode('single');
+                  setSelectedStudentIds([]);
+                  setSelectedTeamId('');
+                }}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  selectionMode === 'single'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Single Student
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode('multiple');
+                  setSelectedStudentIds([]);
+                  setSelectedTeamId('');
+                }}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  selectionMode === 'multiple'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Multiple Students
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode('team');
+                  setSelectedStudentIds([]);
+                  setSelectedTeamId('');
+                }}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  selectionMode === 'team'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Team
+              </button>
+            </div>
+
+            {/* Single Student Mode */}
+            {selectionMode === 'single' && (
+              <select
+                value={selectedStudentIds[0] || ''}
+                onChange={(e) => setSelectedStudentIds(e.target.value ? [e.target.value] : [])}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="">Select a student...</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Multiple Students Mode */}
+            {selectionMode === 'multiple' && (
+              <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
+                {students.length === 0 ? (
+                  <p className="text-sm text-gray-500">No students available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {students.map((student) => (
+                      <label key={student.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedStudentIds.includes(student.id)}
+                          onChange={() => handleStudentToggle(student.id)}
+                          className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-gray-700">{student.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {selectedStudentIds.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-600">
+                      {selectedStudentIds.length} student{selectedStudentIds.length !== 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Team Mode */}
+            {selectionMode === 'team' && (
+              <select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="">Select a team...</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.studentIds?.length || 0} students)
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
@@ -266,7 +421,12 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
 
           <button
             onClick={isCreating ? handleSaveNewNote : handleSaveEdit}
-            disabled={saving || !selectedStudentId}
+            disabled={
+              saving || 
+              (selectionMode === 'single' && selectedStudentIds.length === 0) ||
+              (selectionMode === 'multiple' && selectedStudentIds.length === 0) ||
+              (selectionMode === 'team' && !selectedTeamId)
+            }
             className="btn btn-primary w-full"
           >
             <Save className="w-4 h-4" />
@@ -355,14 +515,39 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium text-gray-900 truncate">
+                  <div className="flex items-start gap-2 mb-1 flex-wrap">
+                    <h3 className="font-medium text-gray-900">
                       {note.title || 'Untitled Note'}
                     </h3>
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full whitespace-nowrap">
-                      {note.studentName || 'Unknown Student'}
-                    </span>
+                    {note.teamName ? (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full whitespace-nowrap flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {note.teamName}
+                      </span>
+                    ) : note.studentNames && note.studentNames.length > 1 ? (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full whitespace-nowrap">
+                        {note.studentNames.length} students
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full whitespace-nowrap">
+                        {note.studentName || note.studentNames?.[0] || 'Unknown Student'}
+                      </span>
+                    )}
                   </div>
+                  {note.studentNames && note.studentNames.length > 1 && !note.teamName && (
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {note.studentNames.slice(0, 3).map((name, idx) => (
+                        <span key={idx} className="text-xs text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {name}
+                        </span>
+                      ))}
+                      {note.studentNames.length > 3 && (
+                        <span className="text-xs text-gray-500">
+                          +{note.studentNames.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                     {note.content || 'No content'}
                   </p>

@@ -1373,6 +1373,11 @@ export const createAdvisorNote = async (advisorId, noteData) => {
       advisorId,
       studentId: noteData.studentId,
       studentName: noteData.studentName || '',
+      // Support for multiple students/teams
+      studentIds: noteData.studentIds || (noteData.studentId ? [noteData.studentId] : []),
+      studentNames: noteData.studentNames || (noteData.studentName ? [noteData.studentName] : []),
+      teamId: noteData.teamId || null,
+      teamName: noteData.teamName || null,
       title: noteData.title || 'Untitled Note',
       content: noteData.content || '',
       createdAt: serverTimestamp(),
@@ -1388,10 +1393,22 @@ export const createAdvisorNote = async (advisorId, noteData) => {
 export const updateAdvisorNote = async (noteId, noteData) => {
   try {
     const noteRef = doc(db, 'advisorNotes', noteId);
-    await updateDoc(noteRef, {
+    const updateData = {
       ...noteData,
       updatedAt: serverTimestamp()
-    });
+    };
+    
+    // Ensure arrays are updated if provided
+    if (noteData.studentIds) {
+      updateData.studentIds = noteData.studentIds;
+      updateData.studentNames = noteData.studentNames || [];
+    } else if (noteData.studentId) {
+      // Backward compatibility: single student
+      updateData.studentIds = [noteData.studentId];
+      updateData.studentNames = noteData.studentName ? [noteData.studentName] : [];
+    }
+    
+    await updateDoc(noteRef, updateData);
   } catch (error) {
     console.error('Error updating advisor note:', error);
     throw error;
@@ -1442,6 +1459,12 @@ export const createAdvisorTodo = async (todoData) => {
   try {
     const docRef = await addDoc(collection(db, 'advisor_todos'), {
       ...todoData,
+      // Support for multiple students/teams
+      studentIds: todoData.studentIds || (todoData.studentId ? [todoData.studentId] : []),
+      studentNames: todoData.studentNames || [],
+      teamId: todoData.teamId || null,
+      teamName: todoData.teamName || null,
+      dueDate: todoData.dueDate || null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
