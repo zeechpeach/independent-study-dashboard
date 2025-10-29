@@ -773,6 +773,11 @@ export const getAdvisorDashboardData = async (advisorEmail) => {
       return meetingDate >= weekAgo && meetingDate <= now;
     }).length;
 
+    // Count total completed meetings across all students
+    const totalCompletedMeetings = allMeetings.filter(meeting => {
+      return meeting.status === 'completed' || meeting.status === 'attended' || meeting.attendanceMarked;
+    }).length;
+
     const recentReflections = allReflections.filter(reflection => {
       const reflectionDate = reflection.createdAt?.toDate?.() || new Date(reflection.createdAt);
       return reflectionDate >= weekAgo;
@@ -792,7 +797,8 @@ export const getAdvisorDashboardData = async (advisorEmail) => {
       pendingReflections: students.length - recentReflections.length, // Students without recent reflections
       activeGoals,
       overdueItems: overdueGoals,
-      weeklyMeetings
+      weeklyMeetings,
+      totalCompletedMeetings
     };
   } catch (error) {
     console.error('Error getting advisor dashboard data:', error);
@@ -847,7 +853,9 @@ export const getRecentReflectionsByAdvisor = async (advisorEmail, limit = 10) =>
 };
 
 /**
- * Get students who need attention (haven't submitted reflections recently, overdue goals, etc.)
+ * Get students who need attention based on:
+ * 1. Have not completed a meeting in the past 2 weeks (14 days)
+ * 2. Have open/incomplete action items where student has requested help
  * @param {string} advisorEmail - Email of the advisor
  * @returns {Promise<Array>} Array of students who need attention with reasons
  */
@@ -858,60 +866,68 @@ export const getStudentsNeedingAttention = async (advisorEmail) => {
     const studentsNeedingAttention = [];
     
     const now = new Date();
-    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
     for (const student of students) {
       const reasons = [];
-      let hasRecentActivity = false;
-      let daysSinceLastActivity = 0;
+      let needsAttention = false;
+      let daysSinceLastMeeting = 0;
       
-      // Check for recent notes (stored in localStorage, but we can check reflections as a proxy)
-      const reflections = await getUserReflections(student.id);
-      const recentNotes = reflections.filter(reflection => {
-        const reflectionDate = reflection.createdAt?.toDate?.() || new Date(reflection.createdAt);
-        return reflectionDate >= tenDaysAgo;
-      });
-
-      if (recentNotes.length > 0) {
-        hasRecentActivity = true;
-      }
-
-      // Check for completed meetings in last 10 days
+      // Criterion 1: Check for completed meetings in last 14 days
       const meetings = await getUserMeetings(student.id);
       const recentCompletedMeetings = meetings.filter(meeting => {
-        if (meeting.status !== 'completed') return false;
+        // Check if meeting is completed/attended
+        const isCompleted = meeting.status === 'completed' || meeting.status === 'attended' || meeting.attendanceMarked;
+        if (!isCompleted) return false;
+        
         const meetingDate = meeting.scheduledDate?.toDate?.() || new Date(meeting.scheduledDate);
-        return meetingDate >= tenDaysAgo;
+        return meetingDate >= fourteenDaysAgo;
       });
 
-      if (recentCompletedMeetings.length > 0) {
-        hasRecentActivity = true;
-      }
-
-      // Only flag students with NO recent activity
-      if (!hasRecentActivity) {
-        // Calculate days since last activity (notes or meetings)
-        const allActivities = [...reflections, ...meetings];
-        if (allActivities.length > 0) {
-          const sortedActivities = allActivities.sort((a, b) => {
-            const dateA = a.createdAt?.toDate?.() || a.scheduledDate?.toDate?.() || new Date(a.createdAt || a.scheduledDate);
-            const dateB = b.createdAt?.toDate?.() || b.scheduledDate?.toDate?.() || new Date(b.createdAt || b.scheduledDate);
+      if (recentCompletedMeetings.length === 0) {
+        needsAttention = true;
+        
+        // Calculate days since last completed meeting
+        const completedMeetings = meetings.filter(m => 
+          m.status === 'completed' || m.status === 'attended' || m.attendanceMarked
+        );
+        
+        if (completedMeetings.length > 0) {
+          const sortedMeetings = completedMeetings.sort((a, b) => {
+            const dateA = a.scheduledDate?.toDate?.() || new Date(a.scheduledDate);
+            const dateB = b.scheduledDate?.toDate?.() || new Date(b.scheduledDate);
             return dateB - dateA;
           });
-          const lastActivity = sortedActivities[0];
-          const lastActivityDate = lastActivity.createdAt?.toDate?.() || lastActivity.scheduledDate?.toDate?.() || new Date(lastActivity.createdAt || lastActivity.scheduledDate);
-          daysSinceLastActivity = Math.floor((now - lastActivityDate) / (1000 * 60 * 60 * 24));
+          const lastMeeting = sortedMeetings[0];
+          const lastMeetingDate = lastMeeting.scheduledDate?.toDate?.() || new Date(lastMeeting.scheduledDate);
+          daysSinceLastMeeting = Math.floor((now - lastMeetingDate) / (1000 * 60 * 60 * 24));
+          reasons.push(`No completed meeting in ${daysSinceLastMeeting} days`);
         } else {
-          daysSinceLastActivity = 999; // No activity ever
+          daysSinceLastMeeting = 999; // No meetings ever
+          reasons.push('No completed meetings on record');
         }
+      }
 
-        reasons.push(`No notes or meetings in ${daysSinceLastActivity > 10 ? daysSinceLastActivity : '10+'} days`);
-        
+      // Criterion 2: Check for open action items with help requests
+      const actionItems = await getUserActionItems(student.id);
+      const helpRequestedItems = actionItems.filter(item => {
+        const isOpen = item.status !== 'completed' && item.status !== 'done';
+        const needsHelp = item.needsHelp === true || item.helpRequested === true || item.flaggedForHelp === true;
+        return isOpen && needsHelp;
+      });
+
+      if (helpRequestedItems.length > 0) {
+        needsAttention = true;
+        reasons.push(`${helpRequestedItems.length} action item${helpRequestedItems.length > 1 ? 's' : ''} flagged for help`);
+      }
+
+      // Add student to attention list if they meet ANY criterion
+      if (needsAttention) {
         studentsNeedingAttention.push({
           ...student,
           attentionReasons: reasons,
-          overdueGoals: 0,
-          daysSinceLastActivity: daysSinceLastActivity
+          daysSinceLastMeeting: daysSinceLastMeeting,
+          helpRequestedItems: helpRequestedItems.length
         });
       }
     }
@@ -1474,3 +1490,156 @@ export const getAdvisorTodos = async (advisorId) => {
     throw error;
   }
 };
+
+// ============================================================================
+// Project Group Management Functions
+// ============================================================================
+
+/**
+ * Create a new project group
+ * @param {Object} groupData - Project group data including name, advisorId, and studentIds
+ * @returns {Promise<string>} - ID of the created project group
+ */
+export const createProjectGroup = async (groupData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'projectGroups'), {
+      name: groupData.name,
+      description: groupData.description || '',
+      advisorId: groupData.advisorId,
+      studentIds: groupData.studentIds || [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating project group:', error);
+    throw enhanceFirebaseError(error, 'create project group');
+  }
+};
+
+/**
+ * Update an existing project group
+ * @param {string} groupId - ID of the project group
+ * @param {Object} updates - Fields to update
+ */
+export const updateProjectGroup = async (groupId, updates) => {
+  try {
+    await updateDoc(doc(db, 'projectGroups', groupId), {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error updating project group:', error);
+    throw enhanceFirebaseError(error, 'update project group');
+  }
+};
+
+/**
+ * Delete a project group
+ * @param {string} groupId - ID of the project group
+ */
+export const deleteProjectGroup = async (groupId) => {
+  try {
+    await deleteDoc(doc(db, 'projectGroups', groupId));
+  } catch (error) {
+    console.error('Error deleting project group:', error);
+    throw enhanceFirebaseError(error, 'delete project group');
+  }
+};
+
+/**
+ * Get all project groups for an advisor
+ * @param {string} advisorId - ID of the advisor
+ * @returns {Promise<Array>} Array of project groups
+ */
+export const getProjectGroupsByAdvisor = async (advisorId) => {
+  try {
+    const q = query(
+      collection(db, 'projectGroups'),
+      where('advisorId', '==', advisorId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting project groups:', error);
+    throw enhanceFirebaseError(error, 'get project groups');
+  }
+};
+
+/**
+ * Get a specific project group by ID
+ * @param {string} groupId - ID of the project group
+ * @returns {Promise<Object>} Project group data
+ */
+export const getProjectGroup = async (groupId) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'projectGroups', groupId));
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting project group:', error);
+    throw enhanceFirebaseError(error, 'get project group');
+  }
+};
+
+/**
+ * Create a meeting for multiple students (project group or multi-select)
+ * @param {Object} meetingData - Meeting data
+ * @param {Array<string>} studentIds - Array of student IDs
+ * @param {string} advisorId - ID of the advisor creating the meeting
+ * @returns {Promise<string>} - ID of the created meeting
+ */
+export const createGroupMeeting = async (meetingData, studentIds, advisorId) => {
+  try {
+    const docRef = await addDoc(collection(db, 'meetings'), {
+      ...meetingData,
+      studentIds: studentIds,
+      studentId: studentIds[0], // Keep for backward compatibility
+      isGroupMeeting: studentIds.length > 1,
+      loggedBy: 'advisor',
+      advisorId: advisorId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating group meeting:', error);
+    throw enhanceFirebaseError(error, 'create group meeting');
+  }
+};
+
+/**
+ * Create action items for a group meeting with flexible assignment
+ * @param {Object} actionItemData - Action item data
+ * @param {Array<string>} studentIds - Array of student IDs to assign to
+ * @param {string} meetingId - Optional meeting ID to link to
+ * @returns {Promise<Array<string>>} - Array of created action item IDs
+ */
+export const createGroupActionItems = async (actionItemData, studentIds, meetingId = null) => {
+  try {
+    const actionItemIds = [];
+    
+    for (const studentId of studentIds) {
+      const docRef = await addDoc(collection(db, 'actionItems'), {
+        userId: studentId,
+        ...actionItemData,
+        meetingId: meetingId,
+        isGroupItem: studentIds.length > 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      actionItemIds.push(docRef.id);
+    }
+    
+    return actionItemIds;
+  } catch (error) {
+    console.error('Error creating group action items:', error);
+    throw enhanceFirebaseError(error, 'create group action items');
+  }
+};;

@@ -51,6 +51,12 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
     
+    // Project groups collection - advisor can manage their own groups
+    match /projectGroups/{groupId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isZeechAdvisor();
+    }
+    
     // Any other collections - restrict to advisor only for security
     match /{document=**} {
       allow read, write: if isZeechAdvisor();

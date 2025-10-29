@@ -34,9 +34,10 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
           name: student.name,
           issue: student.attentionReasons.join(', '),
           priority: determinePriority(student),
-          daysOverdue: student.daysSinceLastReflection || 0,
+          daysOverdue: student.daysSinceLastMeeting || 0,
           rawReasons: student.attentionReasons,
-          overdueGoals: student.overdueGoals
+          helpRequestedItems: student.helpRequestedItems || 0,
+          daysSinceLastMeeting: student.daysSinceLastMeeting || 0
         }));
         
         setStudentsNeedingAttention(transformedStudents);
@@ -52,12 +53,12 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
   }, [actualAdvisorEmail]);
 
   const determinePriority = (student) => {
-    // High priority: multiple issues or >7 days since reflection
-    if (student.attentionReasons.length > 1 || student.daysSinceLastReflection > 7) {
+    // High priority: multiple issues or >21 days since meeting or help requested
+    if (student.attentionReasons.length > 1 || student.daysSinceLastMeeting > 21 || student.helpRequestedItems > 0) {
       return 'high';
     }
-    // Medium priority: overdue goals or 3-7 days since reflection
-    if (student.overdueGoals > 0 || student.daysSinceLastReflection > 3) {
+    // Medium priority: 14-21 days since meeting
+    if (student.daysSinceLastMeeting >= 14) {
       return 'medium';
     }
     // Low priority: other issues
@@ -140,10 +141,10 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">{student.issue}</p>
-                {student.daysOverdue > 0 && (
+                {student.daysSinceLastMeeting > 0 && (
                   <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
                     <Clock className="w-3 h-3" />
-                    <span>{student.daysOverdue} day(s) since last reflection</span>
+                    <span>{student.daysSinceLastMeeting} day(s) since last meeting</span>
                   </div>
                 )}
               </div>
