@@ -127,7 +127,7 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
         </div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[300px] overflow-y-auto">
         {studentsNeedingAttention.map((student) => (
           <div 
             key={student.id}

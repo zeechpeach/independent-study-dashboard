@@ -212,7 +212,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
 
   if (loading) {
     return (
-      <div className="card">
+      <div className="card min-h-[400px]">
         <div className="card-header">
           <h2 className="card-title">Action Items</h2>
         </div>
@@ -228,7 +228,7 @@ const AdvisorTodoList = ({ advisorId, students = [] }) => {
   const completedTodos = todos.filter(t => t.completed);
 
   return (
-    <div className="card">
+    <div className="card min-h-[400px]">
       <div className="card-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
