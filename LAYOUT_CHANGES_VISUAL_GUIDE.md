@@ -188,7 +188,7 @@ For developers updating or maintaining this layout:
 2. **AdvisorDashboardGrid.Main/Sidebar:** Now replaced with CSS Grid in main component
 3. **Action Items location:** Check sidebar instead of main content
 4. **Panel heights:** 
-   - Important Dates: Container max ~300px, scroll area max 240px
+   - Important Dates: Container max 300px, scroll area max 240px
    - Students Needing Help: Container max 400px, scroll area max 250px
 
 ## Testing Checklist
