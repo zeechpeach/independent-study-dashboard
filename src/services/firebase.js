@@ -646,6 +646,34 @@ export const getImportantDatesForAdvisors = async (advisorIds) => {
   }
 };
 
+/**
+ * Get important dates created by a specific student
+ * @param {string} studentId - The student's user ID
+ * @returns {Promise<Array>} Array of student-created important dates
+ */
+export const getStudentImportantDates = async (studentId) => {
+  try {
+    if (!studentId) {
+      return [];
+    }
+    
+    const q = query(
+      collection(db, 'importantDates'),
+      where('studentId', '==', studentId),
+      where('scope', '==', 'student'),
+      orderBy('date', 'asc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting student important dates:', error);
+    throw error;
+  }
+};
+
 // Admin functions
 export const getAllUsers = async () => {
   try {

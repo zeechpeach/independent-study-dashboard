@@ -1,46 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock } from 'lucide-react';
-import { getImportantDatesForAdvisors, getAdvisorByName } from '../../services/firebase';
+import { getImportantDatesForAdvisors, getStudentImportantDates, getAdvisorByName } from '../../services/firebase';
 
 const DashboardImportantDatesPanel = ({ userProfile }) => {
   const [importantDates, setImportantDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchImportantDates();
-  }, [userProfile]);
-
-  const fetchImportantDates = async () => {
+  const fetchImportantDates = useCallback(async () => {
     if (!userProfile) return;
     
     try {
       setLoading(true);
       setError(null);
       
-      let advisorIds = [];
+      let advisorDates = [];
+      let studentDates = [];
       
-      // Get advisor IDs based on current assignment structure
+      // Get advisor IDs and fetch advisor dates
       if (userProfile.advisor) {
-        // Single advisor assignment (current structure)
         const advisor = await getAdvisorByName(userProfile.advisor);
         if (advisor) {
-          advisorIds.push(advisor.id);
+          const advisorIds = [advisor.id];
+          advisorDates = await getImportantDatesForAdvisors(advisorIds);
         }
       }
       
       // Future: handle multiple advisors if userProfile.advisors exists
       if (userProfile.advisors && Array.isArray(userProfile.advisors)) {
-        advisorIds = [...advisorIds, ...userProfile.advisors];
+        const multiAdvisorDates = await getImportantDatesForAdvisors(userProfile.advisors);
+        advisorDates = [...advisorDates, ...multiAdvisorDates];
       }
       
-      // Get important dates for assigned advisors + global dates
-      const dates = await getImportantDatesForAdvisors(advisorIds);
+      // Get student's own personal important dates
+      if (userProfile.uid || userProfile.id) {
+        studentDates = await getStudentImportantDates(userProfile.uid || userProfile.id);
+      }
+      
+      // Combine advisor and student dates, removing duplicates
+      const combinedDates = [...advisorDates, ...studentDates];
+      const uniqueDatesMap = new Map();
+      combinedDates.forEach(date => {
+        uniqueDatesMap.set(date.id, date);
+      });
       
       // Filter for upcoming dates (today or future) and limit to 6
       const today = new Date().toISOString().split('T')[0];
-      const upcomingDates = dates
+      const upcomingDates = Array.from(uniqueDatesMap.values())
         .filter(date => date.date >= today)
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
         .slice(0, 6);
       
       setImportantDates(upcomingDates);
@@ -50,7 +58,11 @@ const DashboardImportantDatesPanel = ({ userProfile }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userProfile]);
+
+  useEffect(() => {
+    fetchImportantDates();
+  }, [fetchImportantDates]);
 
   const getDaysUntil = (dateStr) => {
     const date = new Date(dateStr);
