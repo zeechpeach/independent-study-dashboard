@@ -15,6 +15,7 @@ import {
   updateActionItem,
   deleteActionItem,
   getImportantDatesForAdvisors,
+  getStudentImportantDates,
   getAdvisorByName,
   createImportantDate
 } from '../../services/firebase';
@@ -52,24 +53,37 @@ const StudentDashboard = ({ user, userProfile }) => {
       const userActionItems = await getUserActionItems(user.uid);
       setActionItems(userActionItems);
       
-      // Fetch important dates from assigned advisors
-      if (userProfile?.advisor) {
-        try {
-          // Get advisor ID from name  
+      // Fetch important dates from assigned advisors AND student's own dates
+      try {
+        let advisorDates = [];
+        let studentDates = [];
+        
+        // Get advisor dates if advisor is assigned
+        if (userProfile?.advisor) {
           const advisor = await getAdvisorByName(userProfile.advisor);
           const advisorIds = advisor ? [advisor.id] : [];
-          
-          // Get important dates for advisor + global dates, filter for upcoming
-          const allDates = await getImportantDatesForAdvisors(advisorIds);
-          const today = new Date().toISOString().split('T')[0];
-          const upcomingDates = allDates.filter(date => date.date >= today);
-          
-          setImportantDates(upcomingDates);
-        } catch (error) {
-          console.error('Error fetching advisor important dates:', error);
-          setImportantDates([]);
+          advisorDates = await getImportantDatesForAdvisors(advisorIds);
         }
-      } else {
+        
+        // Get student's own personal important dates
+        studentDates = await getStudentImportantDates(user.uid);
+        
+        // Combine both lists and remove duplicates
+        const combinedDates = [...advisorDates, ...studentDates];
+        const uniqueDatesMap = new Map();
+        combinedDates.forEach(date => {
+          uniqueDatesMap.set(date.id, date);
+        });
+        
+        // Filter for upcoming dates only
+        const today = new Date().toISOString().split('T')[0];
+        const upcomingDates = Array.from(uniqueDatesMap.values())
+          .filter(date => date.date >= today)
+          .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+        
+        setImportantDates(upcomingDates);
+      } catch (error) {
+        console.error('Error fetching important dates:', error);
         setImportantDates([]);
       }
     } catch (error) {

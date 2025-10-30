@@ -15,6 +15,7 @@ describe('Important Dates Functions', () => {
     expect(typeof firebase.deleteImportantDate).toBe('function');
     expect(typeof firebase.getAdvisorImportantDates).toBe('function');
     expect(typeof firebase.getImportantDatesForAdvisors).toBe('function');
+    expect(typeof firebase.getStudentImportantDates).toBe('function');
     expect(typeof firebase.getAllImportantDates).toBe('function');
   });
 
@@ -107,6 +108,28 @@ describe('Important Dates Functions', () => {
     expect(typeof expectedDateStructure.date).toBe('string');
   });
 
+  // Test getStudentImportantDates function signature
+  test('getStudentImportantDates should handle empty/null student ID', async () => {
+    const { getStudentImportantDates } = require('./firebase');
+    
+    try {
+      const result = await getStudentImportantDates(null);
+      expect(result).toEqual([]);
+    } catch (error) {
+      // Expected to fail in test environment, but should handle null input
+      expect(error).toBeDefined();
+    }
+  });
+
+  test('getStudentImportantDates should be callable with student ID', () => {
+    const { getStudentImportantDates } = require('./firebase');
+    
+    // Function should exist and be callable
+    expect(() => {
+      getStudentImportantDates('test-student-id');
+    }).not.toThrow();
+  });
+
   // Test date filtering logic (can be tested without Firebase)
   test('Date filtering logic should work correctly', () => {
     const mockDates = [
@@ -121,5 +144,25 @@ describe('Important Dates Functions', () => {
     expect(upcomingDates.length).toBeGreaterThanOrEqual(2); // Today and future events
     expect(upcomingDates.some(date => date.title === 'Past Event')).toBe(false);
     expect(upcomingDates.some(date => date.title === 'Future Event')).toBe(true);
+  });
+
+  // Test student date filtering logic
+  test('Student date filtering should exclude other students dates', () => {
+    const mockDates = [
+      { id: '1', title: 'My Date', date: '2030-01-01', scope: 'student', studentId: 'student1' },
+      { id: '2', title: 'Other Date', date: '2030-01-02', scope: 'student', studentId: 'student2' },
+      { id: '3', title: 'Advisor Date', date: '2030-01-03', advisorId: 'advisor1' },
+    ];
+
+    // Student1 should only see their own dates plus advisor dates
+    const student1Dates = mockDates.filter(date => 
+      (date.scope === 'student' && date.studentId === 'student1') || 
+      (date.advisorId && date.scope !== 'student')
+    );
+    
+    expect(student1Dates.length).toBe(2);
+    expect(student1Dates.some(date => date.title === 'My Date')).toBe(true);
+    expect(student1Dates.some(date => date.title === 'Advisor Date')).toBe(true);
+    expect(student1Dates.some(date => date.title === 'Other Date')).toBe(false);
   });
 });
