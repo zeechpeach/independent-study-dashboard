@@ -221,10 +221,10 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </div>
       </div>
 
-      {/* Stats Overview - Compact Stats and Important Dates */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Compact stat cards - significantly reduced padding and sizing */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2">
+      {/* Stats Overview - CSS Grid Layout with Improved Proportions */}
+      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] md:grid-rows-[auto_auto] gap-4">
+        {/* Compact stat cards - small size for simple numeric content */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2 md:max-w-[200px]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Total Students</p>
@@ -234,7 +234,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2 md:max-w-[200px]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-green-700">Total Meeting Views</p>
@@ -244,61 +244,78 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           </div>
         </div>
 
-        <div className="md:row-span-1">
+        {/* Important Dates - tall section spanning both rows */}
+        <div className="md:row-span-2">
           <AdvisorImportantDatesPanel
             userProfile={userProfile}
             onManageClick={() => setShowImportantDates(true)}
           />
         </div>
+
+        {/* Quick Actions - spanning two columns below stat containers */}
+        <div className="card md:col-span-2">
+          <div className="card-header">
+            <h2 className="card-title">Quick Actions</h2>
+          </div>
+          <AdvisorGridContainer cols={2} gap={3}>
+            <button 
+              onClick={() => setShowStudentList(true)}
+              className="btn btn-primary"
+              disabled={!isStudentListEnabled}
+            >
+              <Users className="w-4 h-4" />
+              View All Students
+              {!isStudentListEnabled && (
+                <span className="text-xs opacity-75">(Preview)</span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => setShowActiveGoals(true)}
+              className="btn btn-secondary"
+            >
+              <Target className="w-4 h-4" />
+              Review Active Goals
+            </button>
+            <button 
+              onClick={() => setShowMeetingHistory(true)}
+              className="btn btn-secondary"
+            >
+              <History className="w-4 h-4" />
+              Meeting History
+            </button>
+            <button 
+              onClick={() => setShowProjectGroups(true)}
+              className="btn btn-secondary"
+            >
+              <Users className="w-4 h-4" />
+              Project Teams
+            </button>
+          </AdvisorGridContainer>
+        </div>
       </div>
 
-      {/* Main Dashboard Grid */}
+      {/* Students Needing Help/Notes Section - positioned next to Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+        <div>
+          <NeedsAttentionPanel 
+            advisorEmail={advisorEmail}
+            userProfile={userProfile}
+            onStudentClick={handleStudentClick}
+            onViewAllClick={handleViewAllStudentIssues}
+          />
+        </div>
+        <div>
+          <AdvisorTodoList 
+            advisorId={user?.uid}
+            students={students}
+          />
+        </div>
+      </div>
+
+      {/* Main Dashboard Grid - Additional Content Below */}
       <AdvisorDashboardGrid>
         <AdvisorDashboardGrid.Main>
-          {/* Quick Actions */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">Quick Actions</h2>
-            </div>
-            <AdvisorGridContainer cols={2} gap={3}>
-              <button 
-                onClick={() => setShowStudentList(true)}
-                className="btn btn-primary"
-                disabled={!isStudentListEnabled}
-              >
-                <Users className="w-4 h-4" />
-                View All Students
-                {!isStudentListEnabled && (
-                  <span className="text-xs opacity-75">(Preview)</span>
-                )}
-              </button>
-
-              <button 
-                onClick={() => setShowActiveGoals(true)}
-                className="btn btn-secondary"
-              >
-                <Target className="w-4 h-4" />
-                Review Active Goals
-              </button>
-              <button 
-                onClick={() => setShowMeetingHistory(true)}
-                className="btn btn-secondary"
-              >
-                <History className="w-4 h-4" />
-                Meeting History
-              </button>
-              <button 
-                onClick={() => setShowProjectGroups(true)}
-                className="btn btn-secondary"
-              >
-                <Users className="w-4 h-4" />
-                Project Teams
-              </button>
-            </AdvisorGridContainer>
-          </div>
-
-
-
           {/* Meeting Management */}
           <AdvisorMeetingsPanel
             advisorEmail={advisorEmail}
@@ -314,16 +331,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
         </AdvisorDashboardGrid.Main>
 
         <AdvisorDashboardGrid.Sidebar>
-          <NeedsAttentionPanel 
-            advisorEmail={advisorEmail}
-            userProfile={userProfile}
-            onStudentClick={handleStudentClick}
-            onViewAllClick={handleViewAllStudentIssues}
-          />
-          <AdvisorTodoList 
-            advisorId={user?.uid}
-            students={students}
-          />
+          {/* Sidebar content can be added here if needed */}
         </AdvisorDashboardGrid.Sidebar>
       </AdvisorDashboardGrid>
     </div>
