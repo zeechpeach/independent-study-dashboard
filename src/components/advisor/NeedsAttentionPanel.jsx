@@ -82,15 +82,15 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
   if (loading) {
     return (
       <div className={`card ${className}`}>
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <h2 className="card-title">Students Needing Help</h2>
+        <div className="card-header py-2">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <h2 className="text-sm font-semibold text-gray-900">Students Needing Help</h2>
           </div>
         </div>
-        <div className="flex items-center justify-center py-8">
-          <div className="loading-spinner w-6 h-6" />
-          <span className="ml-2 text-gray-600">Loading...</span>
+        <div className="flex items-center justify-center py-6">
+          <div className="loading-spinner w-5 h-5" />
+          <span className="ml-2 text-gray-600 text-xs">Loading...</span>
         </div>
       </div>
     );
@@ -99,15 +99,15 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
   if (error) {
     return (
       <div className={`card ${className}`}>
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <h2 className="card-title">Students Needing Help</h2>
+        <div className="card-header py-2">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <h2 className="text-sm font-semibold text-gray-900">Students Needing Help</h2>
           </div>
         </div>
-        <div className="text-center py-8">
-          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-400" />
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="text-center py-6">
+          <AlertTriangle className="w-6 h-6 mx-auto mb-1 text-red-400" />
+          <p className="text-xs text-red-600">{error}</p>
         </div>
       </div>
     );
@@ -115,43 +115,43 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
 
   return (
     <div className={`card ${className}`}>
-      <div className="card-header">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <h2 className="card-title">Students Needing Help</h2>
+      <div className="card-header py-2">
+        <div className="flex items-center gap-1.5">
+          <AlertTriangle className="w-4 h-4 text-red-600" />
+          <h2 className="text-sm font-semibold text-gray-900">Students Needing Help</h2>
           {studentsNeedingAttention.length > 0 && (
-            <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+            <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
               {studentsNeedingAttention.length}
             </span>
           )}
         </div>
       </div>
       
-      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+      <div className="space-y-2 max-h-[250px] overflow-y-auto px-4 py-2">
         {studentsNeedingAttention.map((student) => (
           <div 
             key={student.id}
-            className={`p-3 rounded-lg border ${getPriorityColor(student.priority)}`}
+            className={`p-2 rounded border ${getPriorityColor(student.priority)}`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-sm">{student.name}</h3>
-                  <span className="text-xs font-medium uppercase px-1.5 py-0.5 rounded">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-medium text-xs truncate">{student.name}</h3>
+                  <span className="text-xs font-medium uppercase px-1 py-0.5 rounded flex-shrink-0">
                     {student.priority}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{student.issue}</p>
+                <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{student.issue}</p>
                 {student.daysSinceLastMeeting > 0 && (
-                  <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{student.daysSinceLastMeeting} day(s) since last meeting</span>
+                  <div className="flex items-center gap-0.5 mt-1 text-xs text-gray-500">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>{student.daysSinceLastMeeting}d</span>
                   </div>
                 )}
               </div>
               <button 
                 onClick={() => onStudentClick && onStudentClick(student)}
-                className="text-xs bg-white text-gray-700 border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
+                className="text-xs bg-white text-gray-700 border border-gray-300 px-1.5 py-0.5 rounded hover:bg-gray-50 flex-shrink-0"
               >
                 View
               </button>
@@ -160,17 +160,17 @@ const NeedsAttentionPanel = ({ className = '', advisorEmail, userProfile, onStud
         ))}
         
         {studentsNeedingAttention.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm">All students are up to date!</p>
+          <div className="text-center py-4 text-gray-500">
+            <Users className="w-6 h-6 mx-auto mb-1 text-gray-400" />
+            <p className="text-xs">All students are up to date!</p>
           </div>
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-2 pt-2 border-t border-gray-200 px-4 pb-2">
         <button 
           onClick={() => onViewAllClick && onViewAllClick()}
-          className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="w-full text-xs text-blue-600 hover:text-blue-800 font-medium"
         >
           View All Student Issues
         </button>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Calendar, Target, History } from 'lucide-react';
-import AdvisorDashboardGrid, { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
+import { Users, Target, History } from 'lucide-react';
+import { AdvisorGridContainer } from '../components/shared/AdvisorDashboardGrid';
 import NeedsAttentionPanel from '../components/advisor/NeedsAttentionPanel';
 import AdvisorStudentList from '../components/advisor/AdvisorStudentList';
 import AdvisorImportantDates from '../components/advisor/AdvisorImportantDates';
@@ -204,8 +204,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with inline stats */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <button
             onClick={onBack}
@@ -213,127 +213,114 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           >
             ← Back to Student View
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Advisor Dashboard</h1>
-          <p className="text-gray-600">Monitor student progress and provide guidance</p>
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-2xl font-bold text-gray-900">Advisor Dashboard</h1>
+            {/* Compact inline stats next to title */}
+            <div className="flex items-center gap-3">
+              <div className="bg-white rounded border border-gray-300 px-3 py-1.5">
+                <span className="text-xs font-medium text-gray-600">Total Students: </span>
+                <span className="text-sm font-bold text-gray-900">{statsData.totalStudents}</span>
+              </div>
+              <div className="bg-white rounded border border-gray-300 px-3 py-1.5">
+                <span className="text-xs font-medium text-gray-600">Total Meetings Completed: </span>
+                <span className="text-sm font-bold text-gray-900">{statsData.totalCompletedMeetings}</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-gray-600 mt-1">Monitor student progress and provide guidance</p>
           {error && (
             <p className="text-red-600 text-sm mt-1">⚠️ Some data may be incomplete due to loading errors</p>
           )}
         </div>
       </div>
 
-      {/* Stats Overview - CSS Grid Layout with Improved Proportions */}
-      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] md:grid-rows-[auto_auto] gap-4">
-        {/* Compact stat cards - small size for simple numeric content */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2 md:max-w-[160px]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Total Students</p>
-              <p className="text-lg font-bold text-gray-900">{statsData.totalStudents}</p>
+      {/* Two-column layout: Main Content (65%) + Sidebar (35%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+        {/* Main Content Area (Left side, ~65% width) */}
+        <div className="space-y-6">
+          {/* Quick Actions Panel */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">Quick Actions</h2>
             </div>
-            <Users className="w-4 h-4 text-blue-600" />
+            <AdvisorGridContainer cols={2} gap={3}>
+              <button 
+                onClick={() => setShowStudentList(true)}
+                className="btn btn-primary"
+                disabled={!isStudentListEnabled}
+              >
+                <Users className="w-4 h-4" />
+                View All Students
+                {!isStudentListEnabled && (
+                  <span className="text-xs opacity-75">(Preview)</span>
+                )}
+              </button>
+
+              <button 
+                onClick={() => setShowActiveGoals(true)}
+                className="btn btn-secondary"
+              >
+                <Target className="w-4 h-4" />
+                Review Active Goals
+              </button>
+              <button 
+                onClick={() => setShowMeetingHistory(true)}
+                className="btn btn-secondary"
+              >
+                <History className="w-4 h-4" />
+                Meeting History
+              </button>
+              <button 
+                onClick={() => setShowProjectGroups(true)}
+                className="btn btn-secondary"
+              >
+                <Users className="w-4 h-4" />
+                Project Teams
+              </button>
+            </AdvisorGridContainer>
           </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2 md:max-w-[160px]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-green-700">Total Meeting Views</p>
-              <p className="text-lg font-bold text-green-900">{statsData.totalCompletedMeetings}</p>
-            </div>
-            <Calendar className="w-4 h-4 text-green-600" />
-          </div>
-        </div>
 
-        {/* Important Dates - compact section spanning one row */}
-        <div className="md:row-span-1">
-          <AdvisorImportantDatesPanel
-            userProfile={userProfile}
-            onManageClick={() => setShowImportantDates(true)}
-          />
-        </div>
-
-        {/* Quick Actions - spanning two columns below stat containers */}
-        <div className="card md:col-span-2">
-          <div className="card-header">
-            <h2 className="card-title">Quick Actions</h2>
-          </div>
-          <AdvisorGridContainer cols={2} gap={3}>
-            <button 
-              onClick={() => setShowStudentList(true)}
-              className="btn btn-primary"
-              disabled={!isStudentListEnabled}
-            >
-              <Users className="w-4 h-4" />
-              View All Students
-              {!isStudentListEnabled && (
-                <span className="text-xs opacity-75">(Preview)</span>
-              )}
-            </button>
-
-            <button 
-              onClick={() => setShowActiveGoals(true)}
-              className="btn btn-secondary"
-            >
-              <Target className="w-4 h-4" />
-              Review Active Goals
-            </button>
-            <button 
-              onClick={() => setShowMeetingHistory(true)}
-              className="btn btn-secondary"
-            >
-              <History className="w-4 h-4" />
-              Meeting History
-            </button>
-            <button 
-              onClick={() => setShowProjectGroups(true)}
-              className="btn btn-secondary"
-            >
-              <Users className="w-4 h-4" />
-              Project Teams
-            </button>
-          </AdvisorGridContainer>
-        </div>
-      </div>
-
-      {/* Students Needing Help/Notes Section - positioned next to Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
-        <div>
-          <NeedsAttentionPanel 
-            advisorEmail={advisorEmail}
-            userProfile={userProfile}
-            onStudentClick={handleStudentClick}
-            onViewAllClick={handleViewAllStudentIssues}
-          />
-        </div>
-        <div>
-          <AdvisorTodoList 
-            advisorId={user?.uid}
-            students={students}
-          />
-        </div>
-      </div>
-
-      {/* Main Dashboard Grid - Additional Content Below */}
-      <AdvisorDashboardGrid>
-        <AdvisorDashboardGrid.Main>
-          {/* Meeting Management */}
+          {/* Meeting Management Panel */}
           <AdvisorMeetingsPanel
             advisorEmail={advisorEmail}
             userProfile={userProfile}
             onViewHistory={() => setShowMeetingHistory(true)}
           />
 
-          {/* Advisor Notes */}
+          {/* Meeting Notes Panel */}
           <AdvisorNotesSection
             advisorId={user?.uid}
             students={students}
           />
-        </AdvisorDashboardGrid.Main>
+        </div>
 
-        <AdvisorDashboardGrid.Sidebar>
-          {/* Sidebar content can be added here if needed */}
-        </AdvisorDashboardGrid.Sidebar>
-      </AdvisorDashboardGrid>
+        {/* Sidebar (Right side, ~35% width, ~350px) */}
+        <div className="space-y-4">
+          {/* Important Dates - compact, max ~300px tall */}
+          <div className="max-h-[300px]">
+            <AdvisorImportantDatesPanel
+              userProfile={userProfile}
+              onManageClick={() => setShowImportantDates(true)}
+            />
+          </div>
+
+          {/* Students Needing Help - compact, max ~150px tall */}
+          <div className="max-h-[400px]">
+            <NeedsAttentionPanel 
+              advisorEmail={advisorEmail}
+              userProfile={userProfile}
+              onStudentClick={handleStudentClick}
+              onViewAllClick={handleViewAllStudentIssues}
+            />
+          </div>
+
+          {/* Action Items - moved from main area to sidebar */}
+          <AdvisorTodoList 
+            advisorId={user?.uid}
+            students={students}
+          />
+        </div>
+      </div>
     </div>
   );
 };
