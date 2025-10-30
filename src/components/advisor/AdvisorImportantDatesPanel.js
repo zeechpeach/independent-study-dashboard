@@ -90,14 +90,14 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
+      <div className="bg-white rounded-lg shadow-md p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-semibold text-gray-800">Important Dates</h3>
           </div>
         </div>
-        <div className="flex justify-center items-center h-24">
+        <div className="flex justify-center items-center h-20">
           <div className="loading-spinner"></div>
         </div>
       </div>
@@ -106,18 +106,18 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
+      <div className="bg-white rounded-lg shadow-md p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-semibold text-gray-800">Important Dates</h3>
           </div>
         </div>
         <div className="text-center text-red-600">
-          <p className="text-sm">{error}</p>
+          <p className="text-xs">{error}</p>
           <button 
             onClick={fetchImportantDates}
-            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+            className="mt-1 text-xs text-blue-600 hover:text-blue-800"
           >
             Try again
           </button>
@@ -127,17 +127,17 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
+    <div className="bg-white rounded-lg shadow-md p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-semibold text-gray-800">Important Dates</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {!showAddForm && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+              className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
               title="Add New Date"
             >
               <Plus className="w-3 h-3" />
@@ -146,7 +146,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
           )}
           <button
             onClick={onManageClick}
-            className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+            className="text-xs px-1.5 py-0.5 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
             Manage
           </button>
@@ -222,41 +222,40 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
       )}
       
       {importantDates.length === 0 && !showAddForm ? (
-        <div className="text-center py-8 text-gray-500">
-          <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-          <p className="text-sm mb-2">No upcoming important dates</p>
+        <div className="text-center py-4 text-gray-500">
+          <Calendar className="w-6 h-6 mx-auto mb-1 text-gray-300" />
+          <p className="text-xs mb-1">No upcoming important dates</p>
           <button
             onClick={onManageClick}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="text-xs text-blue-600 hover:text-blue-800"
           >
             Create your first date
           </button>
         </div>
       ) : (
-        <div className="space-y-3 max-h-[200px] overflow-y-auto">
+        <div className="space-y-2 max-h-[240px] overflow-y-auto">
           {importantDates.map((date) => (
-            <div key={date.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-800 text-sm">{date.title}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3 h-3 text-gray-400" />
+            <div key={date.id} className="border rounded p-2 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-800 text-xs truncate">{date.title}</h4>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Clock className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
                     <span className="text-xs text-gray-500">
                       {new Date(date.date).toLocaleDateString('en-US', {
                         month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
+                        day: 'numeric'
                       })}
                     </span>
                   </div>
                   {date.description && (
-                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">
                       {date.description}
                     </p>
                   )}
                 </div>
-                <div className="ml-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                <div className="flex-shrink-0">
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                     getDaysUntil(date.date) === 'Today' 
                       ? 'bg-red-100 text-red-700'
                       : getDaysUntil(date.date) === 'Tomorrow'
@@ -271,7 +270,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
           ))}
           
           {importantDates.length === 3 && (
-            <div className="text-center pt-2">
+            <div className="text-center pt-1">
               <button
                 onClick={onManageClick}
                 className="text-xs text-blue-600 hover:text-blue-800"
