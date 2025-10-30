@@ -90,7 +90,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4 h-full">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
@@ -106,7 +106,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4 h-full">
+      <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
@@ -127,7 +127,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 h-full">
+    <div className="bg-white rounded-lg shadow-md p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-blue-600" />
