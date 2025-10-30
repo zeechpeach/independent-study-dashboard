@@ -224,7 +224,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       {/* Stats Overview - CSS Grid Layout with Improved Proportions */}
       <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] md:grid-rows-[auto_auto] gap-4">
         {/* Compact stat cards - small size for simple numeric content */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2 md:max-w-[200px]">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-2 md:max-w-[160px]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Total Students</p>
@@ -234,7 +234,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2 md:max-w-[200px]">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 shadow-sm p-2 md:max-w-[160px]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-green-700">Total Meeting Views</p>
@@ -244,8 +244,8 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
           </div>
         </div>
 
-        {/* Important Dates - tall section spanning both rows */}
-        <div className="md:row-span-2">
+        {/* Important Dates - compact section spanning one row */}
+        <div className="md:row-span-1">
           <AdvisorImportantDatesPanel
             userProfile={userProfile}
             onManageClick={() => setShowImportantDates(true)}
@@ -296,7 +296,7 @@ const AdvisorDashboard = ({ user, userProfile, onBack }) => {
       </div>
 
       {/* Students Needing Help/Notes Section - positioned next to Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
         <div>
           <NeedsAttentionPanel 
             advisorEmail={advisorEmail}

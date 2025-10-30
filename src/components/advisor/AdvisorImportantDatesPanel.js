@@ -90,14 +90,14 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
           </div>
         </div>
-        <div className="flex justify-center items-center h-32">
+        <div className="flex justify-center items-center h-24">
           <div className="loading-spinner"></div>
         </div>
       </div>
@@ -106,8 +106,8 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
@@ -127,8 +127,8 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-gray-800">Important Dates</h3>
@@ -233,7 +233,7 @@ const AdvisorImportantDatesPanel = ({ userProfile, onManageClick }) => {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[200px] overflow-y-auto">
           {importantDates.map((date) => (
             <div key={date.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
