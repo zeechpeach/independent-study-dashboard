@@ -186,6 +186,12 @@ The implementation includes responsive design considerations:
 1. Enable Firebase Storage in Firebase Console
 2. Deploy storage.rules: `firebase deploy --only storage`
 3. Ensure Storage bucket is configured in environment variables
+4. **Configure CORS for Storage bucket:**
+   ```bash
+   gsutil cors set cors.json gs://YOUR_PROJECT_ID.appspot.com
+   ```
+   This allows cross-origin requests from the Vercel app and localhost.
+   See `cors.json` in the project root for the configuration details.
 
 ### Environment Variables:
 No new variables required - uses existing `REACT_APP_FIREBASE_STORAGE_BUCKET`
