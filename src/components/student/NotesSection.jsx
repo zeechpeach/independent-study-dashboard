@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Save, Trash2, Edit2, Plus, X } from 'lucide-react';
+import { FileText, Save, Trash2, Edit2, Plus, X, File } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { getUserNotes, createNote, updateNote, deleteNote } from '../../services/firebase';
+import { getUserNotes, createNote, updateNote, deleteNote, uploadNoteMedia, deleteNoteMedia } from '../../services/firebase';
+import MediaUploader from '../shared/MediaUploader';
 
 /**
  * NotesSection - A note-taking component for students with support for multiple titled notes
- * Students can create, edit, delete, and view a list of their notes
+ * Students can create, edit, delete, and view a list of their notes with media attachments
  */
 const NotesSection = ({ userId }) => {
   const [notes, setNotes] = useState([]);
@@ -15,6 +16,7 @@ const NotesSection = ({ userId }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
+  const [editedMedia, setEditedMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +41,7 @@ const NotesSection = ({ userId }) => {
     setIsCreating(true);
     setEditedTitle('');
     setEditedContent('');
+    setEditedMedia([]);
     setSelectedNote(null);
   };
 
@@ -50,14 +53,40 @@ const NotesSection = ({ userId }) => {
 
     setSaving(true);
     try {
-      await createNote(userId, {
+      // Create the note first to get the note ID
+      const noteId = await createNote(userId, {
         title: editedTitle.trim() || 'Untitled Note',
-        content: editedContent
+        content: editedContent,
+        media: [] // Will be updated after uploads
       });
+
+      // Upload media files if any
+      const uploadedMedia = [];
+      for (const mediaItem of editedMedia) {
+        if (mediaItem.isNew && mediaItem.file) {
+          try {
+            const uploadResult = await uploadNoteMedia(mediaItem.file, noteId, userId);
+            uploadedMedia.push(uploadResult);
+          } catch (error) {
+            console.error('Error uploading media:', error);
+            alert(`Failed to upload ${mediaItem.name}. The note was saved without this file.`);
+          }
+        } else if (!mediaItem.isNew) {
+          // Keep existing media
+          uploadedMedia.push(mediaItem);
+        }
+      }
+
+      // Update note with media references if any were uploaded
+      if (uploadedMedia.length > 0) {
+        await updateNote(noteId, { media: uploadedMedia });
+      }
+
       await fetchNotes();
       setIsCreating(false);
       setEditedTitle('');
       setEditedContent('');
+      setEditedMedia([]);
     } catch (error) {
       console.error('Error creating note:', error);
       alert('Failed to create note. Please try again.');
@@ -70,6 +99,7 @@ const NotesSection = ({ userId }) => {
     setSelectedNote(note);
     setEditedTitle(note.title);
     setEditedContent(note.content);
+    setEditedMedia(note.media || []);
     setIsEditing(true);
   };
 
@@ -78,15 +108,54 @@ const NotesSection = ({ userId }) => {
 
     setSaving(true);
     try {
+      // Upload new media files
+      const uploadedMedia = [];
+      const existingMedia = editedMedia.filter(item => !item.isNew);
+      const newMedia = editedMedia.filter(item => item.isNew);
+      
+      // Keep existing media
+      uploadedMedia.push(...existingMedia);
+
+      // Upload new media
+      for (const mediaItem of newMedia) {
+        if (mediaItem.file) {
+          try {
+            const uploadResult = await uploadNoteMedia(mediaItem.file, selectedNote.id, userId);
+            uploadedMedia.push(uploadResult);
+          } catch (error) {
+            console.error('Error uploading media:', error);
+            alert(`Failed to upload ${mediaItem.name}. The note was saved without this file.`);
+          }
+        }
+      }
+
+      // Check if any media was removed and delete from storage
+      const originalMedia = selectedNote.media || [];
+      const removedMedia = originalMedia.filter(
+        original => !uploadedMedia.some(current => current.path === original.path)
+      );
+
+      for (const mediaItem of removedMedia) {
+        if (mediaItem.path) {
+          try {
+            await deleteNoteMedia(mediaItem.path);
+          } catch (error) {
+            console.error('Error deleting media:', error);
+          }
+        }
+      }
+
       await updateNote(selectedNote.id, {
         title: editedTitle.trim() || 'Untitled Note',
-        content: editedContent
+        content: editedContent,
+        media: uploadedMedia
       });
       await fetchNotes();
       setIsEditing(false);
       setSelectedNote(null);
       setEditedTitle('');
       setEditedContent('');
+      setEditedMedia([]);
     } catch (error) {
       console.error('Error updating note:', error);
       alert('Failed to update note. Please try again.');
@@ -112,11 +181,17 @@ const NotesSection = ({ userId }) => {
   };
 
   const handleCancelEdit = () => {
+    // Clean up preview URLs for new media items
+    editedMedia.filter(item => item.isNew && item.previewUrl).forEach(item => {
+      URL.revokeObjectURL(item.previewUrl);
+    });
+    
     setIsEditing(false);
     setIsCreating(false);
     setSelectedNote(null);
     setEditedTitle('');
     setEditedContent('');
+    setEditedMedia([]);
   };
 
   const formatTimeAgo = (timestamp) => {
@@ -210,6 +285,12 @@ const NotesSection = ({ userId }) => {
             />
           </div>
 
+          <MediaUploader
+            media={editedMedia}
+            onMediaChange={setEditedMedia}
+            disabled={saving}
+          />
+
           <button
             onClick={isCreating ? handleSaveNewNote : handleSaveEdit}
             disabled={saving}
@@ -273,6 +354,33 @@ const NotesSection = ({ userId }) => {
                     className="text-sm text-gray-600 line-clamp-2 mt-1 prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: note.content || 'No content' }}
                   />
+                  
+                  {/* Media preview */}
+                  {note.media && note.media.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {note.media.slice(0, 3).map((media, idx) => (
+                        <div key={idx} className="relative">
+                          {media.type === 'image' ? (
+                            <img
+                              src={media.url}
+                              alt={media.name}
+                              className="w-16 h-16 object-cover rounded border border-gray-300"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 flex items-center justify-center bg-gray-200 rounded border border-gray-300">
+                              <File className="w-6 h-6 text-gray-500" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {note.media.length > 3 && (
+                        <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded border border-gray-300 text-xs text-gray-600">
+                          +{note.media.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <p className="text-xs text-gray-500 mt-2">
                     Updated {formatTimeAgo(note.updatedAt)}
                   </p>

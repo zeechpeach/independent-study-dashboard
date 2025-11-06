@@ -1,0 +1,50 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isZeechAdvisor() {
+      return isSignedIn() && request.auth.token.email == 'zchien@bwscampus.com';
+    }
+    
+    // Validate file size (10MB max)
+    function validFileSize() {
+      return request.resource.size <= 10 * 1024 * 1024;
+    }
+    
+    // Validate file type
+    function validFileType() {
+      return request.resource.contentType.matches('image/jpeg')
+          || request.resource.contentType.matches('image/png')
+          || request.resource.contentType.matches('image/gif')
+          || request.resource.contentType.matches('application/pdf')
+          || request.resource.contentType.matches('application/msword')
+          || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+          || request.resource.contentType.matches('application/vnd.ms-excel')
+          || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          || request.resource.contentType.matches('text/plain');
+    }
+    
+    // Student notes media files
+    // Path: notes/{userId}/{noteId}/{filename}
+    match /notes/{userId}/{noteId}/{filename} {
+      // Users can upload to their own notes, advisors can upload to any notes
+      allow create: if isSignedIn() && (request.auth.uid == userId || isZeechAdvisor())
+                    && validFileSize() && validFileType();
+      
+      // Users can read their own note media, advisors can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isZeechAdvisor());
+      
+      // Users can delete their own note media, advisors can delete any
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isZeechAdvisor());
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
