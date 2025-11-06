@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Validate Firebase configuration
 const validateFirebaseConfig = () => {
@@ -37,6 +38,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 /**
  * Helper function to handle Firebase errors consistently
@@ -1356,6 +1358,7 @@ export const createNote = async (userId, noteData) => {
       userId,
       title: noteData.title || 'Untitled Note',
       content: noteData.content || '',
+      media: noteData.media || [], // Array of media attachments
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -1381,7 +1384,30 @@ export const updateNote = async (noteId, noteData) => {
 
 export const deleteNote = async (noteId) => {
   try {
-    await deleteDoc(doc(db, 'notes', noteId));
+    // Get the note first to check for media files
+    const noteRef = doc(db, 'notes', noteId);
+    const noteDoc = await getDoc(noteRef);
+    
+    if (noteDoc.exists()) {
+      const noteData = noteDoc.data();
+      
+      // Delete all associated media files from storage
+      if (noteData.media && Array.isArray(noteData.media)) {
+        for (const mediaItem of noteData.media) {
+          if (mediaItem.path) {
+            try {
+              await deleteNoteMedia(mediaItem.path);
+            } catch (error) {
+              console.error('Error deleting media file:', error);
+              // Continue with note deletion even if media deletion fails
+            }
+          }
+        }
+      }
+    }
+    
+    // Delete the note document
+    await deleteDoc(noteRef);
   } catch (error) {
     console.error('Error deleting note:', error);
     throw error;
@@ -1424,6 +1450,7 @@ export const createAdvisorNote = async (advisorId, noteData) => {
       teamName: noteData.teamName || null,
       title: noteData.title || 'Untitled Note',
       content: noteData.content || '',
+      media: noteData.media || [], // Array of media attachments
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -1461,7 +1488,30 @@ export const updateAdvisorNote = async (noteId, noteData) => {
 
 export const deleteAdvisorNote = async (noteId) => {
   try {
-    await deleteDoc(doc(db, 'advisorNotes', noteId));
+    // Get the note first to check for media files
+    const noteRef = doc(db, 'advisorNotes', noteId);
+    const noteDoc = await getDoc(noteRef);
+    
+    if (noteDoc.exists()) {
+      const noteData = noteDoc.data();
+      
+      // Delete all associated media files from storage
+      if (noteData.media && Array.isArray(noteData.media)) {
+        for (const mediaItem of noteData.media) {
+          if (mediaItem.path) {
+            try {
+              await deleteNoteMedia(mediaItem.path);
+            } catch (error) {
+              console.error('Error deleting media file:', error);
+              // Continue with note deletion even if media deletion fails
+            }
+          }
+        }
+      }
+    }
+    
+    // Delete the note document
+    await deleteDoc(noteRef);
   } catch (error) {
     console.error('Error deleting advisor note:', error);
     throw error;
@@ -1709,4 +1759,121 @@ export const createGroupActionItems = async (actionItemData, studentIds, meeting
     console.error('Error creating group action items:', error);
     throw enhanceFirebaseError(error, 'create group action items');
   }
-};;
+};
+
+/**
+ * Media Upload Service Functions
+ * Handles file uploads to Firebase Storage for notes
+ */
+
+// Allowed file types and their MIME types
+const ALLOWED_FILE_TYPES = {
+  // Images
+  'image/jpeg': { ext: ['.jpg', '.jpeg'], type: 'image' },
+  'image/png': { ext: ['.png'], type: 'image' },
+  'image/gif': { ext: ['.gif'], type: 'image' },
+  // Documents
+  'application/pdf': { ext: ['.pdf'], type: 'document' },
+  'application/msword': { ext: ['.doc'], type: 'document' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: ['.docx'], type: 'document' },
+  'application/vnd.ms-excel': { ext: ['.xls'], type: 'document' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: ['.xlsx'], type: 'document' },
+  'text/plain': { ext: ['.txt'], type: 'document' },
+};
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
+/**
+ * Validate file before upload
+ * @param {File} file - File to validate
+ * @returns {Object} - { valid: boolean, error?: string }
+ */
+export const validateFile = (file) => {
+  if (!file) {
+    return { valid: false, error: 'No file provided' };
+  }
+
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: `File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB` };
+  }
+
+  // Check file type
+  if (!ALLOWED_FILE_TYPES[file.type]) {
+    return { valid: false, error: 'File type not supported. Allowed types: JPG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX, TXT' };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Upload a file to Firebase Storage for a note
+ * @param {File} file - File to upload
+ * @param {string} noteId - Note ID to associate the file with
+ * @param {string} userId - User ID of the note owner
+ * @returns {Promise<Object>} - { url: string, name: string, type: string, size: number, path: string }
+ */
+export const uploadNoteMedia = async (file, noteId, userId) => {
+  try {
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    // Create a unique file path
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `notes/${userId}/${noteId}/${timestamp}_${sanitizedFileName}`;
+    
+    // Create storage reference
+    const storageRef = ref(storage, filePath);
+    
+    // Upload file
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: file.type
+    });
+    
+    // Get download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    // Determine file type category
+    const fileTypeInfo = ALLOWED_FILE_TYPES[file.type];
+    
+    return {
+      url: downloadURL,
+      name: file.name,
+      type: fileTypeInfo.type,
+      size: file.size,
+      path: filePath,
+      mimeType: file.type,
+      uploadedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw enhanceFirebaseError(error, 'upload file');
+  }
+};
+
+/**
+ * Delete a file from Firebase Storage
+ * @param {string} filePath - Storage path of the file to delete
+ */
+export const deleteNoteMedia = async (filePath) => {
+  try {
+    if (!filePath) {
+      throw new Error('File path is required');
+    }
+    
+    const storageRef = ref(storage, filePath);
+    await deleteObject(storageRef);
+  } catch (error) {
+    // If file doesn't exist, that's ok - it's already deleted
+    if (error.code === 'storage/object-not-found') {
+      console.log('File already deleted or does not exist:', filePath);
+      return;
+    }
+    console.error('Error deleting file:', error);
+    throw enhanceFirebaseError(error, 'delete file');
+  }
+};

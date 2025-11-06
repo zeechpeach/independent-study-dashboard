@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Save, Trash2, Edit2, Plus, X, Search, Filter, Users } from 'lucide-react';
-import { getAdvisorNotes, createAdvisorNote, updateAdvisorNote, deleteAdvisorNote, getProjectGroupsByAdvisor } from '../../services/firebase';
+import { FileText, Save, Trash2, Edit2, Plus, X, Search, Filter, Users, File } from 'lucide-react';
+import { getAdvisorNotes, createAdvisorNote, updateAdvisorNote, deleteAdvisorNote, getProjectGroupsByAdvisor, uploadNoteMedia, deleteNoteMedia } from '../../services/firebase';
 import { processSelectionMode } from '../../utils/selectionUtils';
+import MediaUploader from '../shared/MediaUploader';
 
 /**
  * AdvisorNotesSection - A note-taking component for advisors with student/team tagging
- * Advisors can create, edit, delete, and view notes tagged to specific students or teams
+ * Advisors can create, edit, delete, and view notes tagged to specific students or teams with media attachments
  */
 const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   const [notes, setNotes] = useState([]);
@@ -14,6 +15,7 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
+  const [editedMedia, setEditedMedia] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectionMode, setSelectionMode] = useState('single'); // 'single', 'multiple', 'team'
@@ -57,6 +59,7 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
     setIsCreating(true);
     setEditedTitle('');
     setEditedContent('');
+    setEditedMedia([]);
     setSelectedStudentIds([]);
     setSelectedTeamId('');
     setSelectionMode('single');
@@ -84,7 +87,8 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
 
     setSaving(true);
     try {
-      await createAdvisorNote(advisorId, {
+      // Create the note first to get the note ID
+      const noteId = await createAdvisorNote(advisorId, {
         studentId: studentIds[0], // For backward compatibility
         studentName: studentNames[0] || '',
         studentIds,
@@ -92,12 +96,36 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
         teamId,
         teamName,
         title: editedTitle.trim() || 'Untitled Note',
-        content: editedContent
+        content: editedContent,
+        media: [] // Will be updated after uploads
       });
+
+      // Upload media files if any
+      const uploadedMedia = [];
+      for (const mediaItem of editedMedia) {
+        if (mediaItem.isNew && mediaItem.file) {
+          try {
+            const uploadResult = await uploadNoteMedia(mediaItem.file, noteId, advisorId);
+            uploadedMedia.push(uploadResult);
+          } catch (error) {
+            console.error('Error uploading media:', error);
+            alert(`Failed to upload ${mediaItem.name}. The note was saved without this file.`);
+          }
+        } else if (!mediaItem.isNew) {
+          uploadedMedia.push(mediaItem);
+        }
+      }
+
+      // Update note with media references if any were uploaded
+      if (uploadedMedia.length > 0) {
+        await updateAdvisorNote(noteId, { media: uploadedMedia });
+      }
+
       await fetchNotes();
       setIsCreating(false);
       setEditedTitle('');
       setEditedContent('');
+      setEditedMedia([]);
       setSelectedStudentIds([]);
       setSelectedTeamId('');
     } catch (error) {
@@ -112,6 +140,7 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
     setSelectedNote(note);
     setEditedTitle(note.title);
     setEditedContent(note.content);
+    setEditedMedia(note.media || []);
     
     // Determine selection mode based on note data
     if (note.teamId) {
@@ -149,6 +178,43 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
 
     setSaving(true);
     try {
+      // Upload new media files
+      const uploadedMedia = [];
+      const existingMedia = editedMedia.filter(item => !item.isNew);
+      const newMedia = editedMedia.filter(item => item.isNew);
+      
+      // Keep existing media
+      uploadedMedia.push(...existingMedia);
+
+      // Upload new media
+      for (const mediaItem of newMedia) {
+        if (mediaItem.file) {
+          try {
+            const uploadResult = await uploadNoteMedia(mediaItem.file, selectedNote.id, advisorId);
+            uploadedMedia.push(uploadResult);
+          } catch (error) {
+            console.error('Error uploading media:', error);
+            alert(`Failed to upload ${mediaItem.name}. The note was saved without this file.`);
+          }
+        }
+      }
+
+      // Check if any media was removed and delete from storage
+      const originalMedia = selectedNote.media || [];
+      const removedMedia = originalMedia.filter(
+        original => !uploadedMedia.some(current => current.path === original.path)
+      );
+
+      for (const mediaItem of removedMedia) {
+        if (mediaItem.path) {
+          try {
+            await deleteNoteMedia(mediaItem.path);
+          } catch (error) {
+            console.error('Error deleting media:', error);
+          }
+        }
+      }
+
       await updateAdvisorNote(selectedNote.id, {
         studentId: studentIds[0], // For backward compatibility
         studentName: studentNames[0] || '',
@@ -157,13 +223,15 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
         teamId,
         teamName,
         title: editedTitle.trim() || 'Untitled Note',
-        content: editedContent
+        content: editedContent,
+        media: uploadedMedia
       });
       await fetchNotes();
       setIsEditing(false);
       setSelectedNote(null);
       setEditedTitle('');
       setEditedContent('');
+      setEditedMedia([]);
       setSelectedStudentIds([]);
       setSelectedTeamId('');
     } catch (error) {
@@ -191,11 +259,17 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
   };
 
   const handleCancelEdit = () => {
+    // Clean up preview URLs for new media items
+    editedMedia.filter(item => item.isNew && item.previewUrl).forEach(item => {
+      URL.revokeObjectURL(item.previewUrl);
+    });
+    
     setIsEditing(false);
     setIsCreating(false);
     setSelectedNote(null);
     setEditedTitle('');
     setEditedContent('');
+    setEditedMedia([]);
     setSelectedStudentIds([]);
     setSelectedTeamId('');
     setSelectionMode('single');
@@ -419,6 +493,12 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
             />
           </div>
 
+          <MediaUploader
+            media={editedMedia}
+            onMediaChange={setEditedMedia}
+            disabled={saving}
+          />
+
           <button
             onClick={isCreating ? handleSaveNewNote : handleSaveEdit}
             disabled={
@@ -551,6 +631,33 @@ const AdvisorNotesSection = ({ advisorId, students = [] }) => {
                   <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                     {note.content || 'No content'}
                   </p>
+                  
+                  {/* Media preview */}
+                  {note.media && note.media.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {note.media.slice(0, 3).map((media, idx) => (
+                        <div key={idx} className="relative">
+                          {media.type === 'image' ? (
+                            <img
+                              src={media.url}
+                              alt={media.name}
+                              className="w-16 h-16 object-cover rounded border border-gray-300"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 flex items-center justify-center bg-gray-200 rounded border border-gray-300">
+                              <File className="w-6 h-6 text-gray-500" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {note.media.length > 3 && (
+                        <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded border border-gray-300 text-xs text-gray-600">
+                          +{note.media.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <p className="text-xs text-gray-500 mt-2">
                     Updated {formatTimeAgo(note.updatedAt)}
                   </p>
