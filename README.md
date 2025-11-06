@@ -119,6 +119,37 @@ npm run build
 firebase deploy
 ```
 
+### Firebase Storage CORS Configuration
+
+To enable media uploads from the Vercel app and local development, you need to configure CORS for your Firebase Storage bucket:
+
+1. **Install Google Cloud SDK** (if not already installed):
+   ```bash
+   # Follow instructions at: https://cloud.google.com/sdk/docs/install
+   ```
+
+2. **Authenticate with Google Cloud**:
+   ```bash
+   gcloud auth login
+   ```
+
+3. **Apply CORS configuration**:
+   ```bash
+   gsutil cors set cors.json gs://YOUR_PROJECT_ID.appspot.com
+   ```
+   Replace `YOUR_PROJECT_ID` with your actual Firebase project ID.
+
+4. **Verify CORS configuration**:
+   ```bash
+   gsutil cors get gs://YOUR_PROJECT_ID.appspot.com
+   ```
+
+The `cors.json` file is already configured to allow requests from:
+- Production: `https://independent-study-dashboard.vercel.app`
+- Local development: `http://localhost:3000`
+
+**Note:** CORS configuration is required for the media upload feature to work properly. Without it, file uploads will fail with CORS policy errors.
+
 ## Project Structure
 
 ```
