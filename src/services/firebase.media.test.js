@@ -60,7 +60,7 @@ beforeEach(() => {
     REACT_APP_FIREBASE_STORAGE_BUCKET: 'test-project.appspot.com',
     REACT_APP_FIREBASE_MESSAGING_SENDER_ID: '123456789',
     REACT_APP_FIREBASE_APP_ID: '1:123456789:web:test',
-    REACT_APP_ADMIN_EMAIL: 'admin@bwscampus.com'
+    REACT_APP_ADMIN_EMAIL: 'zchien@bwscampus.com'
   };
 });
 
